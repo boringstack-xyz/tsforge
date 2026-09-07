@@ -49,10 +49,10 @@
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@typescript-eslint/parser": "8.68.0",
-    "@typescript-eslint/utils": "8.68.0",
+    "@typescript-eslint/parser": "8.69.0",
+    "@typescript-eslint/utils": "8.69.0",
     "bun-types": "1.4.0",
-    "eslint": "10.9.1",
+    "eslint": "10.10.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-better-tailwindcss": "^4.5.0",
     "eslint-plugin-import-x": "^4.16.2",
@@ -67,10 +67,10 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.68.0"
+    "typescript-eslint": "8.69.0"
   },
   "overrides": {
-    "@typescript-eslint/utils": "8.68.0",
+    "@typescript-eslint/utils": "8.69.0",
     "brace-expansion": "^5.0.9",
     "browserslist": "^4.28.7",
     "dompurify": "^3.4.13",
