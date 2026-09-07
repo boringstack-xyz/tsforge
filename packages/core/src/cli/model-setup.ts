@@ -21,6 +21,7 @@ import {
 } from "../models-config";
 import { isRecord } from "../lib/guards";
 import { trace } from "../lib/trace";
+import { addBootNote } from "./boot-banner";
 import type { ICliArgs } from "./args";
 
 /** The host:port of an API base URL, for the banner (falls back to the raw url). */
@@ -180,8 +181,8 @@ export function warnReviewConfigSplit(cfg: IModelsConfig): void {
   const hasModels = (cfg.reviewModels?.length ?? 0) > 0;
 
   if (hasPanel && !hasModels) {
-    process.stdout.write(
-      "  ↳ reviewPanel drives `tsforge harness-review` (pre-push); /review uses `reviewModels` — add reviewModels for interactive review.\n"
+    addBootNote(
+      "reviewPanel drives `tsforge harness-review` (pre-push); /review uses `reviewModels` — add reviewModels for interactive review.\n"
     );
   }
 }
@@ -192,8 +193,8 @@ export function warnSelfReview(reviewProviders: readonly IProvider[]): void {
     return;
   }
 
-  process.stdout.write(
-    "  ⚠ no reviewModels configured — post-work /review uses the active builder model (self-review).\n"
+  addBootNote(
+    "⚠ no reviewModels configured — post-work /review uses the active builder model (self-review).\n"
   );
 }
 
@@ -213,8 +214,8 @@ export function warnDefaultModelOnRemote(entry: IModelEntry): void {
   const remote = host !== "localhost" && host !== "127.0.0.1" && host !== "::1";
 
   if (remote && entry.model === PROVIDER_DEFAULTS.model) {
-    process.stdout.write(
-      `  ⚠ models.json: model is still "${PROVIDER_DEFAULTS.model}" (the default) but baseUrl is ${host} — set the entry's "model" to a name that host supports.\n`
+    addBootNote(
+      `⚠ models.json: model is still "${PROVIDER_DEFAULTS.model}" (the default) but baseUrl is ${host} — set the entry's "model" to a name that host supports.\n`
     );
   }
 }

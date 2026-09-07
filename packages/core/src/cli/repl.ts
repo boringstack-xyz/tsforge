@@ -144,6 +144,15 @@ import {
   resolveLogPath,
   observeEvents,
 } from "./logging";
+import { setMcpDiagnosticSink } from "../mcp";
+import {
+  setBootHeadline,
+  addBootChip,
+  addBootNote,
+  renderBootBanner,
+  bootBannerEmpty,
+  resetBootBanner,
+} from "./boot-banner";
 import {
   modelInfo,
   detectContextWindow,
@@ -773,7 +782,7 @@ async function initReplSession(args: ICliArgs): Promise<{
   const bound = await resolveScaffoldedWorkspace(args.dir);
 
   if (bound !== args.dir) {
-    process.stdout.write(`  ↳ project is ${bound}\n`);
+    addBootChip("project", bound);
     args.dir = bound;
     process.chdir(bound);
   }
@@ -796,7 +805,7 @@ async function initReplSession(args: ICliArgs): Promise<{
         : null;
 
   if ((args.continue || args.resumeId.length > 0) && resumed === null) {
-    process.stdout.write("(no matching saved session — starting fresh)\n");
+    addBootNote("no matching saved session — starting fresh");
   }
 
   // Keep the strictness a resumed build was started with: re-apply its saved `--profile`
@@ -818,15 +827,15 @@ async function initReplSession(args: ICliArgs): Promise<{
   const logFile = resolveLogPath(id, args.log);
 
   if (logFile.length > 0) {
-    process.stdout.write(`  ↳ logging this run to ${logFile}\n`);
+    addBootChip("log", logFile);
   }
 
   // Scout seeds a one-shot drive-to-green run's first prompt; interactive sessions
   // gather context conversationally, so it doesn't apply here. Say so rather than
   // silently ignore the flag.
   if (args.scout) {
-    process.stdout.write(
-      '  ↳ note: --scout applies to one-shot runs (tsforge "task" --files … --scout); ignored in interactive mode\n'
+    addBootNote(
+      '--scout applies to one-shot runs (tsforge "task" --files … --scout); ignored in interactive mode'
     );
   }
 
@@ -1021,16 +1030,9 @@ function maybeWritePlanModeIntro(planMode: boolean): void {
     return;
   }
 
-  const chip = paint("◆ plan mode (default)", STYLE.brand + STYLE.bold, true);
-  const body = paint(
-    "— I'll explore and propose a plan; reply",
-    STYLE.dim,
-    true
-  );
-  const approve = paint("approve", STYLE.green + STYLE.bold, true);
-  const tail = paint("to build", STYLE.dim, true);
-
-  process.stdout.write(`  ${chip} ${body} ${approve} ${tail}\n`);
+  // Kept short on purpose: this shows on EVERY session start, so it earns its
+  // room by saying what to type, not by re-explaining what plan mode is.
+  setBootHeadline("◆ plan mode", "reply approve to build");
 }
 
 /**
@@ -1072,7 +1074,7 @@ function installTerminalRestore(
  *  module helper so its branch stays out of `repl`'s cognitive-complexity budget. */
 function announceGithub(on: boolean): void {
   if (on) {
-    process.stdout.write("  ↳ github: on (git + PR review via gh)\n");
+    addBootChip("github", "on · git + PR review via gh");
   }
 }
 
@@ -1080,7 +1082,7 @@ function announceGithub(on: boolean): void {
  *  `repl`'s cognitive-complexity budget (mirrors announceGithub). */
 function announceLinear(on: boolean): void {
   if (on) {
-    process.stdout.write("  ↳ linear: on (issues + start-work via MCP)\n");
+    addBootChip("linear", "on · issues + start-work via MCP");
   }
 }
 
@@ -1088,7 +1090,44 @@ function announceLinear(on: boolean): void {
  *  so its branch stays out of `repl`'s cognitive-complexity budget. */
 function announceIntegration(on: boolean, name: string, detail: string): void {
   if (on) {
-    process.stdout.write(`  ↳ ${name}: on (${detail})\n`);
+    addBootChip(name, `on · ${detail}`);
+  }
+}
+
+/** Hold every boot diagnostic (the model/capability banner, MCP connect results,
+ *  config warnings) until the pane console exists, so `seedPaneLanding` can put
+ *  it in the scrollback. The pane's first full paint clears the screen, so
+ *  anything written before that flickers once and is gone — which is how a real
+ *  "MCP server failed to connect" line became invisible noise. Headless and
+ *  non-TTY runs never enter the pane, so they keep writing straight out. */
+function beginBootCapture(): void {
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    return;
+  }
+
+  outputRouter.beginCapture();
+  // models.json MCP diagnostics are emitted during config load, before any of
+  // this is on screen; route them into the same buffer.
+  setMcpDiagnosticSink(addBootNote);
+}
+
+/** Emit the boot banner (and anything the router held) straight to stdout, for
+ *  every path where the pane never painted: headless, non-TTY, and a pane that
+ *  refused to enter. Without this the collected notices would be dropped on the
+ *  floor rather than merely misplaced. */
+function flushBootOutputToStdout(): void {
+  const captured = outputRouter.capturing ? outputRouter.endCapture() : "";
+
+  setMcpDiagnosticSink(null);
+
+  if (!bootBannerEmpty()) {
+    const cols = process.stdout.columns > 0 ? process.stdout.columns : 80;
+
+    process.stdout.write(renderBootBanner(cols, process.stdout.isTTY));
+  }
+
+  if (captured.length > 0) {
+    process.stdout.write(captured);
   }
 }
 
@@ -1098,6 +1137,8 @@ export async function repl(args: ICliArgs): Promise<number> {
   // things up is silly). Only a DEFAULT — an explicit TSFORGE_WEB (incl. "0") wins,
   // and one-shot/headless/eval never run this path, so they stay offline+deterministic.
   process.env.TSFORGE_WEB ??= "1";
+
+  beginBootCapture();
 
   const {
     session: initialSession,
@@ -1136,9 +1177,9 @@ export async function repl(args: ICliArgs): Promise<number> {
   // between `createInterface` and the `rl.on("line")` listener would yield the
   // event loop with readline live but unlistened, dropping the first typed line
   // (a real pty regression the e2e caught). All boot IO must finish up front.
-  const agentSpecs = await loadAgentSpecs(args.dir, (m) =>
-    process.stdout.write(`  ↳ ${m}\n`)
-  );
+  const agentSpecs = await loadAgentSpecs(args.dir, (m) => {
+    addBootNote(m);
+  });
   const delegationConfig = await loadTsforgeConfig(args.dir);
   // Which image capabilities are configured — decides whether read_image /
   // generate_image are offered and whether attached images get described.
@@ -1476,18 +1517,19 @@ export async function repl(args: ICliArgs): Promise<number> {
       ...(imageCaps.imageGen ? ["generate"] : []),
     ].join(" + ");
 
-    process.stdout.write(`  ↳ image: ${on} (drag/@ to attach)\n`);
+    addBootChip("image", `${on} · drag/@ to attach`);
   }
 
   // Make the delegation setup visible so the concurrency cap is never a mystery
   // (cap 1 ⇒ subagents run serially; raise agents.concurrency to overlap them).
   if (delegationOff) {
-    process.stdout.write("  ↳ delegation: OFF (TSFORGE_NO_DELEGATION)\n");
+    addBootChip("delegation", "off · TSFORGE_NO_DELEGATION");
   } else if (agentSpecs.length > 0) {
     const names = agentSpecs.map((s) => s.id).join(", ");
 
-    process.stdout.write(
-      `  ↳ delegation: ${String(agentSpecs.length)} specialists (${names}) · cap ${String(delegationCap)}\n`
+    addBootChip(
+      "delegation",
+      `${String(agentSpecs.length)} specialists · cap ${String(delegationCap)} · ${names}`
     );
   }
 
@@ -3999,6 +4041,31 @@ export async function repl(args: ICliArgs): Promise<number> {
 
       syncWorklistPanel(plan);
 
+      // The boot banner, config warnings and MCP connect results, rendered
+      // INSIDE the TUI as the transcript's first lines: scrollable, and they
+      // survive the paint that used to erase them. The banner is formatted
+      // HERE because this is the first moment the transcript width is known —
+      // which is what lets labels align and long details hang-indent instead
+      // of wrapping back to column 0.
+      const captured = outputRouter.endCapture();
+
+      setMcpDiagnosticSink(null);
+
+      const banner = renderBootBanner(panes.mainInnerCols(), true);
+
+      if (banner.length > 0) {
+        panes.appendMain(banner);
+      }
+
+      // Consumed. Without this the later stdout flush would render the whole
+      // banner a SECOND time, outside the frame — which is precisely the
+      // leaking-onto-the-raw-terminal bug this change exists to remove.
+      resetBootBanner();
+
+      if (captured.length > 0) {
+        panes.appendMain(captured);
+      }
+
       if (updateNotice !== null) {
         panes.appendMain(`${updateNotice}\n`);
       }
@@ -4027,6 +4094,9 @@ export async function repl(args: ICliArgs): Promise<number> {
           rows: process.stdout.rows > 0 ? process.stdout.rows : 0,
         });
 
+        // Never swallow boot output on the failure path: the pane never
+        // painted, so stdout is the right destination after all.
+        flushBootOutputToStdout();
         process.stderr.write(
           `${reason ?? `tsforge: could not enter pane console (need ≥ ${String(PANE_MIN_ROWS)} rows)`}\n`
         );
@@ -4041,6 +4111,10 @@ export async function repl(args: ICliArgs): Promise<number> {
       seedPaneLanding(paneScreen);
       resizeEditor?.(process.stdout.columns, process.stdout.rows);
     }
+
+    // Belt and braces: any path that began the capture but never reached
+    // seedPaneLanding must still emit it rather than swallow it.
+    flushBootOutputToStdout();
 
     if (args.task.length > 0) {
       void runLine(args.task); // sent as the first message; prompts when done

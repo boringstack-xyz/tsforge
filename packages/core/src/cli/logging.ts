@@ -42,6 +42,23 @@ const LIFECYCLE_KINDS: ReadonlySet<string> = new Set([
   "agent_result",
 ]);
 
+/** A `start` event carrying run metadata (`model` / `contextWindow`) is the
+ *  log header, not transcript text. Plain `start` events (a task beginning)
+ *  carry neither and still render. */
+export function isRunMeta(event: ILoopEvent): boolean {
+  return (
+    event.kind === "start" &&
+    (event.model !== undefined || event.contextWindow !== undefined)
+  );
+}
+
+/** Boot-time terminal write. Goes through the router (not straight to stdout)
+ *  so `beginCapture` can hold it until the pane console can render it inside
+ *  the TUI. Once capture ends this behaves exactly like a stdout write. */
+export function bootWrite(text: string): void {
+  outputRouter.route(text);
+}
+
 const render: Reporter = (event) => {
   // The observer (the REPL's agent-tree feeder) must never take down rendering:
   // a throw here would propagate out of the reporter and crash the turn/session.
@@ -58,6 +75,16 @@ const render: Reporter = (event) => {
   // under the tree. So skip rendering here once the observer has been notified.
   // Headless/one-shot has no observer, so they still render as linear-log lines.
   if (eventObserver !== null && LIFECYCLE_KINDS.has(event.kind)) {
+    return;
+  }
+
+  // The run-meta `start` event exists so a --log is self-describing for the
+  // analyzer (`model` / `contextWindow`, see ILoopEvent). It is addressed to the
+  // ledger, not to the human at the terminal — rendering it printed a bare
+  // `model … · context window …` line above the pane console, which then wiped
+  // it on the first paint. withLedger still records it; only the render is
+  // skipped, so the log keeps its header.
+  if (isRunMeta(event)) {
     return;
   }
 
