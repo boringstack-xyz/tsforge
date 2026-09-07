@@ -285,13 +285,28 @@ export function diagnoseMcpServers(
   return warnings;
 }
 
-/** Emit MCP config diagnostics to stderr (load-time footgun prevention). */
+/** Where config diagnostics go. Null ⇒ stderr, the right default for headless
+ *  and one-shot runs. The REPL points this at its boot buffer so the warnings
+ *  land inside the pane console instead of being wiped by its first paint —
+ *  set here rather than imported from cli/ to keep the dependency one-way. */
+let diagnosticSink: ((text: string) => void) | null = null;
+
+export function setMcpDiagnosticSink(
+  sink: ((text: string) => void) | null
+): void {
+  diagnosticSink = sink;
+}
+
+/** Emit MCP config diagnostics (load-time footgun prevention). */
 export function warnMcpConfigIssues(
   raw: unknown,
   parsed: Record<string, IMcpServerConfig>,
   env: EnvLookup
 ): void {
+  const write =
+    diagnosticSink ?? ((text: string) => process.stderr.write(text));
+
   for (const line of diagnoseMcpServers(raw, parsed, env)) {
-    process.stderr.write(`  ⚠ ${line}\n`);
+    write(`  ⚠ ${line}\n`);
   }
 }

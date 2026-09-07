@@ -1,4 +1,4 @@
-import { test, expect, describe } from "bun:test";
+import { test, expect, describe, spyOn } from "bun:test";
 import {
   LineDecoder,
   encodeMessage,
@@ -6,6 +6,8 @@ import {
   parseMcpServers,
   interpolateEnv,
   diagnoseMcpServers,
+  warnMcpConfigIssues,
+  setMcpDiagnosticSink,
   mcpToolName,
   mapMcpTool,
   type IMcpToolInfo,
@@ -183,6 +185,51 @@ describe("mcp: config parsing", () => {
     expect(warnings.some((w) => w.includes("linear-mcp"))).toBe(true);
     expect(warnings.some((w) => w.includes("MISSING"))).toBe(true);
     expect(warnings.some((w) => w.includes("no integration keys"))).toBe(true);
+  });
+
+  test("config diagnostics go to an installed sink instead of stderr", () => {
+    // The REPL points this at its boot buffer: on a TTY these fire during config
+    // load, before the pane console paints, and its first paint would wipe them.
+    const raw = { "linear-mcp": { command: "linear" } };
+    const parsed = parseMcpServers(raw, {});
+    const captured: string[] = [];
+
+    setMcpDiagnosticSink((text) => captured.push(text));
+
+    try {
+      warnMcpConfigIssues(raw, parsed, {});
+    } finally {
+      setMcpDiagnosticSink(null);
+    }
+
+    expect(captured.length).toBeGreaterThan(0);
+    expect(captured.join("")).toContain("linear-mcp");
+  });
+
+  test("clearing the sink restores stderr", () => {
+    const raw = { "linear-mcp": { command: "linear" } };
+    const parsed = parseMcpServers(raw, {});
+    const captured: string[] = [];
+    const chunks: string[] = [];
+    const spy = spyOn(process.stderr, "write").mockImplementation(
+      (chunk: string | Uint8Array): boolean => {
+        chunks.push(String(chunk));
+
+        return true;
+      }
+    );
+
+    setMcpDiagnosticSink((text) => captured.push(text));
+    setMcpDiagnosticSink(null);
+
+    try {
+      warnMcpConfigIssues(raw, parsed, {});
+    } finally {
+      spy.mockRestore();
+    }
+
+    expect(captured).toEqual([]);
+    expect(chunks.join("")).toContain("linear-mcp");
   });
 });
 

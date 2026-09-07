@@ -95,6 +95,72 @@ describe("OutputRouter", () => {
     expect(parent).toEqual(["post-turn chunk"]); // fell back to parent
   });
 
+  test("capture holds every write, and endCapture hands it back in order", () => {
+    const router = new OutputRouter();
+
+    router.beginCapture();
+    expect(router.capturing).toBe(true);
+
+    const out = captureStdout(() => {
+      router.route("first\n");
+      router.route("second\n");
+    });
+
+    // Nothing reached the terminal while the pane console had yet to paint.
+    expect(out).toBe("");
+    expect(router.endCapture()).toBe("first\nsecond\n");
+    expect(router.capturing).toBe(false);
+  });
+
+  test("capture outranks BOTH sinks — boot output can't paint into an undrawn frame", () => {
+    const router = new OutputRouter();
+    const parent: string[] = [];
+    const agent: string[] = [];
+
+    router.setParentSink((text) => parent.push(text));
+    router.setAgentSink("run:a", (text) => agent.push(text));
+    router.beginCapture();
+
+    router.route("parent-boot");
+    router.route("agent-boot", "run:a");
+
+    expect(parent).toEqual([]);
+    expect(agent).toEqual([]);
+    expect(router.endCapture()).toBe("parent-bootagent-boot");
+  });
+
+  test("routing resumes to the installed sink after endCapture", () => {
+    const router = new OutputRouter();
+    const parent: string[] = [];
+
+    router.setParentSink((text) => parent.push(text));
+    router.beginCapture();
+    router.route("held");
+    router.endCapture();
+
+    router.route("live");
+
+    expect(parent).toEqual(["live"]);
+  });
+
+  test("beginCapture is idempotent — a second call keeps what the first held", () => {
+    const router = new OutputRouter();
+
+    router.beginCapture();
+    router.route("early");
+    router.beginCapture(); // must not reset the buffer
+    router.route("late");
+
+    expect(router.endCapture()).toBe("earlylate");
+  });
+
+  test("endCapture without a capture is empty and harmless", () => {
+    const router = new OutputRouter();
+
+    expect(router.endCapture()).toBe("");
+    expect(router.capturing).toBe(false);
+  });
+
   test("clearAgentSink removes the route; later writes fall back", () => {
     const router = new OutputRouter();
     const parent: string[] = [];

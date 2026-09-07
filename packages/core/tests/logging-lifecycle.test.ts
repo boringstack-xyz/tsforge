@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { makeReporter, observeEvents, outputRouter } from "../src/cli/logging";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+  makeReporter,
+  observeEvents,
+  outputRouter,
+  isRunMeta,
+} from "../src/cli/logging";
 import type { ILoopEvent } from "../src/loop";
 
 // The shared reporter (`makeReporter("")` returns the internal `render`) plus the
@@ -52,6 +60,78 @@ describe("subagent lifecycle rendering", () => {
 
     expect(sink.length).toBe(1);
     expect(sink.join("")).toContain("read meta-rules.ts");
+  });
+
+  test("the run-meta start event is NOT rendered — it addresses the ledger, not the screen", () => {
+    const parent: string[] = [];
+
+    outputRouter.setParentSink((t) => parent.push(t));
+
+    report({
+      kind: "start",
+      task: "session",
+      message: "model deepseek-v4-flash-vision-exp · context window 262144",
+      model: "deepseek-v4-flash-vision-exp",
+      contextWindow: 262_144,
+    });
+
+    // It used to print above the pane console, which then wiped it on first paint.
+    expect(parent).toEqual([]);
+  });
+
+  test("suppressing the render does NOT cost the ledger its header", async () => {
+    // The whole point of the run-meta event is a self-describing --log. Skipping
+    // the render must not skip the record, or the analyzer loses which model the
+    // metrics belong to.
+    const dir = mkdtempSync(join(tmpdir(), "tsforge-ledger-"));
+    const logFile = join(dir, "run.jsonl");
+    const logged = makeReporter(logFile, "run-meta-test");
+    const parent: string[] = [];
+
+    outputRouter.setParentSink((t) => parent.push(t));
+
+    logged({
+      kind: "start",
+      task: "session",
+      message: "model deepseek-v4-flash-vision-exp · context window 262144",
+      model: "deepseek-v4-flash-vision-exp",
+      contextWindow: 262_144,
+    });
+
+    // The ledger writer may flush asynchronously.
+    await Bun.sleep(50);
+
+    const written = readFileSync(logFile, "utf8");
+
+    expect(parent).toEqual([]); // nothing on screen
+    expect(written).toContain("deepseek-v4-flash-vision-exp"); // everything in the log
+    expect(written).toContain("262144");
+  });
+
+  test("a plain start event (no run metadata) still renders", () => {
+    const parent: string[] = [];
+
+    outputRouter.setParentSink((t) => parent.push(t));
+
+    report({ kind: "start", task: "run", message: "building the thing" });
+
+    expect(parent.join("")).toContain("building the thing");
+  });
+
+  test("isRunMeta keys off the analyzer fields, not the task name", () => {
+    expect(
+      isRunMeta({ kind: "start", task: "session", message: "m", model: "x" })
+    ).toBe(true);
+    expect(
+      isRunMeta({ kind: "start", task: "s", message: "m", contextWindow: 1 })
+    ).toBe(true);
+    expect(isRunMeta({ kind: "start", task: "session", message: "m" })).toBe(
+      false
+    );
+    // A non-start event carrying a model must not be mistaken for the header.
+    expect(
+      isRunMeta({ kind: "usage", task: "run", message: "u", model: "x" })
+    ).toBe(false);
   });
 
   test("headless (no observer): lifecycle events still render as a linear-log line", () => {
