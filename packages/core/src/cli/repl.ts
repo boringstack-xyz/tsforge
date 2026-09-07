@@ -782,7 +782,7 @@ async function initReplSession(args: ICliArgs): Promise<{
   const bound = await resolveScaffoldedWorkspace(args.dir);
 
   if (bound !== args.dir) {
-    addBootChip("project", bound);
+    addBootNote(`project is ${bound}`);
     args.dir = bound;
     process.chdir(bound);
   }
@@ -827,7 +827,7 @@ async function initReplSession(args: ICliArgs): Promise<{
   const logFile = resolveLogPath(id, args.log);
 
   if (logFile.length > 0) {
-    addBootChip("log", logFile);
+    addBootNote(`logging this run to ${logFile}`);
   }
 
   // Scout seeds a one-shot drive-to-green run's first prompt; interactive sessions
@@ -1032,7 +1032,7 @@ function maybeWritePlanModeIntro(planMode: boolean): void {
 
   // Kept short on purpose: this shows on EVERY session start, so it earns its
   // room by saying what to type, not by re-explaining what plan mode is.
-  setBootHeadline("◆ plan mode", "reply approve to build");
+  setBootHeadline("◆ plan mode", "approve to build");
 }
 
 /**
@@ -1074,7 +1074,7 @@ function installTerminalRestore(
  *  module helper so its branch stays out of `repl`'s cognitive-complexity budget. */
 function announceGithub(on: boolean): void {
   if (on) {
-    addBootChip("github", "on · git + PR review via gh");
+    addBootChip("github", "git + PR review");
   }
 }
 
@@ -1082,7 +1082,7 @@ function announceGithub(on: boolean): void {
  *  `repl`'s cognitive-complexity budget (mirrors announceGithub). */
 function announceLinear(on: boolean): void {
   if (on) {
-    addBootChip("linear", "on · issues + start-work via MCP");
+    addBootChip("linear", "issues + start-work");
   }
 }
 
@@ -1090,7 +1090,7 @@ function announceLinear(on: boolean): void {
  *  so its branch stays out of `repl`'s cognitive-complexity budget. */
 function announceIntegration(on: boolean, name: string, detail: string): void {
   if (on) {
-    addBootChip(name, `on · ${detail}`);
+    addBootChip(name, detail);
   }
 }
 
@@ -1517,19 +1517,19 @@ export async function repl(args: ICliArgs): Promise<number> {
       ...(imageCaps.imageGen ? ["generate"] : []),
     ].join(" + ");
 
-    addBootChip("image", `${on} · drag/@ to attach`);
+    addBootChip("image", on);
   }
 
   // Make the delegation setup visible so the concurrency cap is never a mystery
   // (cap 1 ⇒ subagents run serially; raise agents.concurrency to overlap them).
   if (delegationOff) {
-    addBootChip("delegation", "off · TSFORGE_NO_DELEGATION");
+    addBootChip("delegation", "off");
   } else if (agentSpecs.length > 0) {
-    const names = agentSpecs.map((s) => s.id).join(", ");
-
+    // The specialist NAMES are discoverable via /agents; the count and the cap
+    // are what change behaviour, so only those earn a place on the banner.
     addBootChip(
       "delegation",
-      `${String(agentSpecs.length)} specialists · cap ${String(delegationCap)} · ${names}`
+      `×${String(agentSpecs.length)}, cap ${String(delegationCap)}`
     );
   }
 

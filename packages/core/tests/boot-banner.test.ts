@@ -16,91 +16,100 @@ beforeEach(() => {
 const plain = (cols: number): string[] =>
   renderBootBanner(cols, false).split("\n");
 
+/** The real session shape, so width assertions test something representative. */
+const seedTypicalSession = (): void => {
+  setBootHeadline("◆ plan mode", "approve to build");
+  addBootChip("github", "git + PR review");
+  addBootChip("image", "read + generate");
+  addBootChip("delegation", "×4, cap 1");
+};
+
 describe("boot banner", () => {
   test("nothing collected ⇒ empty string (no stray blank line)", () => {
     expect(bootBannerEmpty()).toBe(true);
     expect(renderBootBanner(80, false)).toBe("");
   });
 
-  test("chip details line up in one column regardless of label length", () => {
-    addBootChip("github", "on · git + PR review via gh");
-    addBootChip("image", "read + generate · drag/@ to attach");
-    addBootChip("delegation", "4 specialists · cap 4");
+  test("capabilities share ONE line, not a row each", () => {
+    seedTypicalSession();
 
-    const lines = plain(100);
-    const at = (needle: string): number =>
-      lines.find((l) => l.includes(needle))?.indexOf(needle) ?? -1;
+    const body = renderBootBanner(120, false).trimEnd();
 
-    // Every detail starts at the same column — the old banner had 0 vs 2 space
-    // indents and details that started wherever the label happened to end.
-    expect(at("on · git")).toBe(at("read + generate"));
-    expect(at("read + generate")).toBe(at("4 specialists"));
-    expect(at("on · git")).toBeGreaterThan("delegation".length);
+    // Headline + chips. The per-capability rows were the bulk of the old noise.
+    expect(body.split("\n").length).toBe(2);
+    expect(body).toContain(
+      "github (git + PR review) · image (read + generate) · delegation (×4, cap 1)"
+    );
   });
 
-  test("a long detail hang-indents to the value column, never to column 0", () => {
-    addBootChip(
-      "delegation",
-      "4 specialists · cap 4 · explore, research, review-lens, verify"
+  test("a chip with no detail prints bare, with no empty parentheses", () => {
+    addBootChip("linear");
+    addBootChip("github", "git + PR review");
+
+    const body = renderBootBanner(120, false);
+
+    expect(body).toContain("linear · github (git + PR review)");
+    expect(body).not.toContain("()");
+  });
+
+  test("wrapped rows hang-indent DEEPER than the first — never back to column 0", () => {
+    // A note long enough to wrap at any sane width; the capability line itself
+    // drops its parentheticals rather than wrapping, so it can't demonstrate this.
+    addBootNote(
+      "MCP server 'sentry' failed to connect: spawn npx ENOENT, and the retry timed out"
     );
 
-    const lines = plain(46).filter((l) => l.trim().length > 0);
+    const lines = plain(34).filter((l) => l.trim().length > 0);
 
-    expect(lines.length).toBeGreaterThan(1);
+    expect(lines.length).toBeGreaterThan(1); // it really did wrap
 
-    const valueCol = lines[0]?.indexOf("4 specialists") ?? -1;
+    const firstIndent = lines[0]?.search(/\S/u) ?? -1;
 
-    expect(valueCol).toBeGreaterThan(0);
+    expect(firstIndent).toBeGreaterThan(0);
 
-    // Continuation rows sit under the value column, so the phrase reads as a
-    // block instead of snapping back to the left margin mid-sentence.
     for (const cont of lines.slice(1)) {
-      expect(cont.search(/\S/u)).toBe(valueCol);
+      expect(cont.search(/\S/u)).toBeGreaterThan(firstIndent);
     }
   });
 
-  test("the headline wraps too — it must not run past the pane either", () => {
-    setBootHeadline("◆ plan mode", "reply approve to build, or keep exploring");
-
-    for (const line of plain(40)) {
-      expect(line.length).toBeLessThanOrEqual(40);
-    }
-  });
-
-  test("no rendered row exceeds the pane width", () => {
-    addBootChip(
-      "delegation",
-      "4 specialists · cap 4 · explore, research, review-lens, verify"
-    );
-    addBootChip("image", "read + generate · drag/@ to attach");
+  test("no row exceeds the pane, at a NARROW pane (the reported case)", () => {
+    // ~34 inner columns is a normal terminal at a large font — the width where
+    // the previous aligned-column layout left ~20 columns for a value and
+    // wrapped every one of them raggedly.
+    seedTypicalSession();
     addBootNote("MCP server 'sentry' failed to connect: spawn npx ENOENT");
 
-    for (const line of plain(48)) {
-      expect(line.length).toBeLessThanOrEqual(48);
+    for (const line of plain(34)) {
+      expect(line.length).toBeLessThanOrEqual(34);
     }
   });
 
-  test("headline comes first, with a blank line before the chips", () => {
-    setBootHeadline("◆ plan mode", "reply approve to build");
-    addBootChip("github", "on");
+  test("no row exceeds the pane, at a wide pane", () => {
+    seedTypicalSession();
 
-    const lines = plain(80);
-
-    expect(lines[0]).toContain("◆ plan mode");
-    expect(lines[0]).toContain("reply approve to build");
-    expect(lines[1]).toBe("");
-    expect(lines[2]).toContain("github");
+    for (const line of plain(83)) {
+      expect(line.length).toBeLessThanOrEqual(83);
+    }
   });
 
-  test("notes render below the chips and keep their text", () => {
-    addBootChip("github", "on");
+  test("headline comes first and carries the instruction", () => {
+    seedTypicalSession();
+
+    const lines = plain(120);
+
+    expect(lines[0]).toContain("◆ plan mode");
+    expect(lines[0]).toContain("approve to build");
+  });
+
+  test("notes render below the chips, separated by a blank line", () => {
+    addBootChip("github", "git + PR review");
     addBootNote("⚠ no reviewModels configured — /review self-reviews");
 
-    const body = renderBootBanner(80, false);
-    const chipAt = body.indexOf("github");
-    const noteAt = body.indexOf("no reviewModels");
+    const body = renderBootBanner(120, false);
 
-    expect(noteAt).toBeGreaterThan(chipAt);
+    expect(body.indexOf("no reviewModels")).toBeGreaterThan(
+      body.indexOf("github")
+    );
     expect(body).toContain("⚠ no reviewModels configured");
   });
 
@@ -117,20 +126,15 @@ describe("boot banner", () => {
     expect(renderBootBanner(80, false)).not.toContain("\n\n\n");
   });
 
-  test("a very narrow pane still produces usable rows", () => {
-    addBootChip("delegation", "4 specialists · cap 4");
+  test("a degenerate width still produces readable rows", () => {
+    seedTypicalSession();
 
-    // Degenerate width: the value column alone would leave no room, so the
-    // renderer floors the detail budget rather than looping or emitting "".
-    const out = renderBootBanner(10, false);
-
-    expect(out.length).toBeGreaterThan(0);
-    expect(out).toContain("specialists");
+    // Floored rather than looping or hard-breaking into single characters.
+    expect(renderBootBanner(4, false)).toContain("plan mode");
   });
 
   test("reset clears everything (no leak between sessions)", () => {
-    setBootHeadline("x", "y");
-    addBootChip("a", "b");
+    seedTypicalSession();
     addBootNote("c");
     resetBootBanner();
 
