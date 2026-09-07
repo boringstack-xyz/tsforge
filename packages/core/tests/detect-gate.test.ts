@@ -37,7 +37,11 @@ test("formatFile normalizes a messy file (via the shared timeout-bounded runner)
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
-});
+  // Spawns eslint --fix AND prettier --write. Both cold-start on a CI runner,
+  // which blows bun's 5s default — this has been failing on main since at least
+  // 2026-09-03. The sibling toolchain-spawning tests in this file already carry
+  // the same 30s allowance.
+}, 30_000);
 
 test("greenfield TS project: brings a strict tsconfig + gates on tsc AND eslint", async () => {
   const dir = await tempDir();
