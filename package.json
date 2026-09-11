@@ -85,7 +85,7 @@
     "ws": "^8.21.0"
   },
   "dependencies": {
-    "@astrojs/starlight": "^0.41.10",
+    "@astrojs/starlight": "^0.42.0",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.2.9",
     "mermaid": "^11.17.2",
