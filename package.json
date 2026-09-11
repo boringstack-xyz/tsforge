@@ -91,6 +91,6 @@
     "mermaid": "^11.17.2",
     "sharp": "^0.35.3",
     "tailwindcss": "^4.3.3",
-    "wrangler": "^4.127.1"
+    "wrangler": "^4.129.1"
   }
 }
