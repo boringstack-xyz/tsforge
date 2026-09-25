@@ -643,8 +643,6 @@ function withOptionalField(
   if (trimmed.length === 0) {
     const { [key]: _drop, ...rest } = item;
 
-    void _drop;
-
     return rest;
   }
 
@@ -708,7 +706,6 @@ export function updateItemFieldsInPlan(
       if (files === undefined) {
         const { files: _drop, ...rest } = next;
 
-        void _drop;
         next = rest;
       } else {
         next = { ...next, files };

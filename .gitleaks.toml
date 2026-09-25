@@ -14,4 +14,8 @@ paths = [
   # "Secret" in the field name trips the generic-api-key heuristic.
   '''packages/core/src/scaffold/scaffold-manifest\.json''',
   '''packages/core/tests/fixtures/scaffold/scaffold-manifest\.json''',
+  # The Chrome extension manifest's "key" is the extension's PUBLIC key (Chrome's
+  # documented way to pin a stable extension ID for load-unpacked installs; the
+  # bridge accepts only that ID). No private key exists in the repo.
+  '''packages/chrome-extension/static/manifest\.json''',
 ]
