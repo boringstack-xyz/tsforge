@@ -14,6 +14,37 @@ function cloneToolCalls(calls: readonly IToolCall[]): IToolCall[] {
   }));
 }
 
+/**
+ * Keep the first occurrence of every line and drop the rest. Only applied to a
+ * DEGENERATED reply: its tail is the loop itself ("Let me record this thread."
+ * ×6), and replaying that verbatim hands the model the exact pattern it just
+ * fell into — the retry reads its own stutter and continues it. The useful
+ * part (findings written before the loop started) survives intact.
+ */
+export function collapseRepeatedLines(text: string): string {
+  const seen = new Set<string>();
+  const kept: string[] = [];
+
+  for (const line of text.split("\n")) {
+    const key = line.trim();
+
+    if (key.length > 0 && seen.has(key)) {
+      continue;
+    }
+
+    if (key.length > 0) {
+      seen.add(key);
+    }
+
+    kept.push(line);
+  }
+
+  return kept
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trimEnd();
+}
+
 /** Build the assistant history message to record after a model call, carrying
  *  `reasoningContent` when the model produced it (DeepSeek's thinking mode requires it
  *  replayed on the next turn).
@@ -44,13 +75,22 @@ export function assistantMessage(res: IModelResponse): IChatMessage {
     res.degenerated === true ||
     res.truncated === true
   ) {
+    const content =
+      res.degenerated === true
+        ? collapseRepeatedLines(res.content)
+        : res.content;
+    const degenReasoning =
+      res.degenerated === true && res.reasoning !== undefined
+        ? { reasoningContent: collapseRepeatedLines(res.reasoning) }
+        : reasoning;
+
     return {
       role: "assistant",
       content:
-        res.content.length > 0
-          ? res.content
+        content.length > 0
+          ? content
           : "(generation interrupted before completion)",
-      ...reasoning,
+      ...degenReasoning,
     };
   }
 

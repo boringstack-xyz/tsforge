@@ -37,6 +37,27 @@ export const STALE_WRITE_ASSISTANT_TURNS = 1;
  */
 export const RETAIN_CHARS = 40_000;
 
+/**
+ * Cap on the transcript handed to the summarizer. Compaction fires at ~80% of
+ * the window, so the unbounded older region was ~200k tokens: a cold prefill a
+ * local server could not finish inside the request timeout, which left the
+ * session unable to ever get below the threshold it was compacting to escape.
+ */
+export const SUMMARY_INPUT_CHARS = 60_000;
+
+/** Per-message caps inside the summary transcript. Tool output is the bulk of
+ *  a long session and the least useful to a brief, so it gets the least room. */
+const SUMMARY_MESSAGE_CHARS = 2000;
+const SUMMARY_TOOL_RESULT_CHARS = 400;
+
+/** The summary is a brief, not a transcript — bound its length and its time. */
+export const SUMMARY_MAX_TOKENS = 2048;
+export const SUMMARY_TIMEOUT_MS = 180_000;
+
+/** User requests kept verbatim-ish in the model-free fallback summary. */
+const FALLBACK_USER_TURNS = 12;
+const FALLBACK_USER_CHARS = 600;
+
 /** Tool results longer than this get their middle dropped (no model involved). */
 export const PRUNE_THRESHOLD_CHARS = 8192;
 
@@ -93,6 +114,9 @@ export interface ICompactResult {
   /** Characters reclaimed when pruning alone sufficed and no summary was written.
    *  Absent on a summarizing compact. */
   prunedChars?: number;
+  /** Set when the summary model call failed and a model-free brief stood in:
+   *  the older turns were still dropped, so the context did shrink. */
+  summaryFailed?: string;
 }
 
 /**
@@ -106,7 +130,15 @@ export function compactSummaryLine(result: {
   before: number;
   after: number;
   prunedChars?: number;
+  summaryFailed?: string;
 }): string {
+  if (result.summaryFailed !== undefined) {
+    return (
+      `compacted ${String(result.before)} → ${String(result.after)} messages ` +
+      `(summary unavailable: ${result.summaryFailed} — kept your requests verbatim)`
+    );
+  }
+
   if (result.prunedChars === undefined) {
     return `compacted ${String(result.before)} → ${String(result.after)} messages`;
   }
@@ -696,19 +728,11 @@ export async function compactConversation(
     return { before, after: before, messages, ...freed };
   }
 
-  const transcript = older.map((m) => `[${m.role}] ${m.content}`).join("\n\n");
-  const res = await provider.complete(
-    [
-      { role: "system", content: COMPACT_SYSTEM },
-      { role: "user", content: transcript },
-    ],
-    { temperature: 0, ...(signal === undefined ? {} : { signal }) }
-  );
-
+  const brief = await summarizeOlder(older, provider, signal);
   const system = messages[0];
   const summary: IChatMessage = {
     role: "user",
-    content: `[Summary of the earlier conversation]\n${res.content}`,
+    content: `[Summary of the earlier conversation]\n${brief.text}`,
   };
   const retained = conversation.slice(start);
   const next: IChatMessage[] =
@@ -716,5 +740,125 @@ export async function compactConversation(
       ? [system, ...laterSystem, summary, ...retained]
       : [...laterSystem, summary, ...retained];
 
-  return { before, after: next.length, messages: next };
+  return {
+    before,
+    after: next.length,
+    messages: next,
+    ...(brief.failed === undefined ? {} : { summaryFailed: brief.failed }),
+  };
+}
+
+function clip(text: string, max: number): string {
+  return text.length <= max ? text : `${text.slice(0, max)} […]`;
+}
+
+/** One message as the summarizer sees it: capped, with the tool calls named
+ *  (their arguments are file bodies — the call's target is what a brief needs). */
+function summaryLine(m: IChatMessage): string {
+  const cap =
+    m.role === "tool" ? SUMMARY_TOOL_RESULT_CHARS : SUMMARY_MESSAGE_CHARS;
+  const calls = (m.toolCalls ?? []).map((tc) => {
+    const target = tc.arguments.path ?? tc.arguments.url ?? tc.arguments.topic;
+
+    return typeof target === "string" ? `${tc.name}(${target})` : tc.name;
+  });
+  const called = calls.length > 0 ? ` → ${calls.join(", ")}` : "";
+
+  return `[${m.role}] ${clip(m.content, cap)}${called}`;
+}
+
+/**
+ * The summarizer's input, bounded by {@link SUMMARY_INPUT_CHARS}. Over budget,
+ * the OLDEST non-user lines go first: the user's requests are the goals the
+ * brief exists to carry, and they are small.
+ */
+export function summaryTranscript(older: readonly IChatMessage[]): string {
+  const lines = older.map((m) => ({
+    user: m.role === "user",
+    text: summaryLine(m),
+  }));
+  let total = lines.reduce((sum, l) => sum + l.text.length + 2, 0);
+  let omitted = 0;
+
+  for (const line of lines) {
+    if (total <= SUMMARY_INPUT_CHARS) {
+      break;
+    }
+
+    if (!line.user) {
+      total -= line.text.length + 2;
+      line.text = "";
+      omitted += 1;
+    }
+  }
+
+  const kept = lines.filter((l) => l.text.length > 0).map((l) => l.text);
+  const note =
+    omitted > 0
+      ? [`[${String(omitted)} older tool/assistant messages omitted]`]
+      : [];
+
+  return [...note, ...kept].join("\n\n");
+}
+
+/** A brief written without the model: the user's latest requests, verbatim-ish.
+ *  Used when the summary call fails, so compaction still frees the context. */
+export function fallbackBrief(older: readonly IChatMessage[]): string {
+  const users = older.filter((m) => m.role === "user");
+  // The FIRST request is usually the overall goal; the rest are the latest.
+  const picked =
+    users.length <= FALLBACK_USER_TURNS
+      ? users
+      : [users[0], ...users.slice(-(FALLBACK_USER_TURNS - 1))];
+  const asks = picked.map(
+    (m) => `- ${clip((m?.content ?? "").trim(), FALLBACK_USER_CHARS)}`
+  );
+
+  return [
+    "(The automatic summary could not be written; earlier tool activity was dropped.",
+    "Check files on disk for work already done before redoing it.)",
+    ...(asks.length > 0 ? ["User requests so far:", ...asks] : []),
+  ].join("\n");
+}
+
+/** Summarize the older region with bounded input, output and time. A failure
+ *  other than the caller's own abort falls back to {@link fallbackBrief} rather
+ *  than propagating: a compaction that throws leaves the context exactly as
+ *  full as before, so every later send would retry it and fail the same way. */
+async function summarizeOlder(
+  older: readonly IChatMessage[],
+  provider: IProvider,
+  signal?: AbortSignal
+): Promise<{ text: string; failed?: string }> {
+  const timeout = AbortSignal.timeout(SUMMARY_TIMEOUT_MS);
+
+  try {
+    const res = await provider.complete(
+      [
+        { role: "system", content: COMPACT_SYSTEM },
+        { role: "user", content: summaryTranscript(older) },
+      ],
+      {
+        temperature: 0,
+        enableThinking: false,
+        maxTokens: SUMMARY_MAX_TOKENS,
+        signal:
+          signal === undefined ? timeout : AbortSignal.any([signal, timeout]),
+      }
+    );
+
+    if (res.content.trim().length > 0) {
+      return { text: res.content };
+    }
+
+    return { text: fallbackBrief(older), failed: "empty reply" };
+  } catch (err) {
+    if (signal?.aborted === true) {
+      throw err;
+    }
+
+    const detail = err instanceof Error ? err.message : String(err);
+
+    return { text: fallbackBrief(older), failed: detail };
+  }
 }

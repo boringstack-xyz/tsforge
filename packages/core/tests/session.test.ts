@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { IProvider } from "../src/inference";
-import { Session, filterGateStream } from "../src/loop";
+import { Session, filterGateStream, type ILoopEvent } from "../src/loop";
 import { isModelTimeout } from "../src/loop/session";
 import { ModelRequestError, StreamInterruptedError } from "../src/inference";
 
@@ -374,6 +374,58 @@ test("auto-compacts before a send once context exceeds the window threshold", as
     );
     expect(session.messages.some((m) => m.content.includes("second"))).toBe(
       true
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+// A summary call that times out (a cold ~200k-token prefill on a local server)
+// must not wedge the session: before the fallback, send() died on the compact,
+// the context stayed at 80%, and every later message re-ran the same doomed
+// compaction forever.
+test("a timed-out compaction summary still lets the send finish and shrinks history", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "tsforge-session-"));
+
+  try {
+    let summaryCalls = 0;
+    const provider: IProvider = {
+      async complete(messages) {
+        if ((messages[0]?.content ?? "").includes("compacting a coding")) {
+          summaryCalls += 1;
+
+          throw new Error("The operation timed out.");
+        }
+
+        return {
+          content: "ok",
+          toolCalls: [],
+          usage: { promptTokens: 90, completionTokens: 5, totalTokens: 95 },
+        };
+      },
+    };
+    const events: ILoopEvent[] = [];
+    const session = await Session.create({
+      provider,
+      cwd: dir,
+      contextWindow: 100,
+      autoCompactAt: 0.8,
+      report: (e) => events.push(e),
+    });
+
+    await session.send("first");
+    await session.send("second");
+    const before = session.messages.length;
+    const third = await session.send("third");
+
+    expect(summaryCalls).toBeGreaterThan(0);
+    expect(third.status).not.toBe("stuck");
+    expect(session.messages.length).toBeLessThanOrEqual(before + 2);
+    expect(events.some((e) => e.message.includes("summary unavailable"))).toBe(
+      true
+    );
+    expect(events.some((e) => e.message.includes("model request failed"))).toBe(
+      false
     );
   } finally {
     await rm(dir, { recursive: true, force: true });

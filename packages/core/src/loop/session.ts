@@ -110,11 +110,13 @@ import {
   isChecklistSnapshot,
   CHECKLIST_SNAPSHOT_MARKER,
 } from "./harness-inject";
+import { announcesNextStep } from "./next-step";
 import {
   autoCompactPct as compactThresholdPct,
   compactConversation,
   compactSummaryLine,
   scrubLegacyWriteArgStubs,
+  type ICompactResult,
 } from "./context-hygiene";
 import {
   filterWriteForceTools,
@@ -669,8 +671,17 @@ export function resetDriveConvergence(state: ILoopState): void {
   delete state.nearGreenRotation;
 }
 
-/** How many times a send recovers from a repetition loop before giving up. */
-const MAX_DEGENERATION_RECOVERIES = 2;
+/** How many CONSECUTIVE repetition loops a send recovers from before giving up.
+ *  Consecutive, not total: the count resets whenever a turn gets tool calls
+ *  through, so an hours-long research send survives a stray loop every so often
+ *  instead of dying on its third one of the night. */
+const MAX_DEGENERATION_RECOVERIES = 3;
+
+/** Sampling temperature for the retry after a repetition loop, by rung. The
+ *  loop is what the model's most likely continuation looks like at the default
+ *  temperature, so a retry at that temperature on nearly the same context tends
+ *  to walk straight back into it. */
+const DEGENERATION_RETRY_TEMPERATURES = [0.6, 0.8, 1.0] as const;
 
 /** How many times a send recovers from a model-request TIMEOUT before giving up.
  *  A single over-long turn (the model spiralled past the request timeout) must not
@@ -731,6 +742,11 @@ export function repetitionResteer(liveGate: boolean): string {
     `the SINGLE next tool call that makes concrete progress (${step}). No prose.`
   );
 }
+
+/** Pushed when a no-gate reply announced its next action but made no call. */
+const CONTINUE_NUDGE =
+  "You said what you would do next but did not do it. Make that tool call now — " +
+  "no prose. If the work is truly finished, say so plainly in one line instead.";
 
 /** Pushed on a read-only spin in a BUILD (gated) session — demand a concrete edit. */
 const READONLY_RESTEER_BUILD =
@@ -2013,13 +2029,18 @@ export class Session {
       message: `⊙ context ~${pct}% full — auto-compacting to free room`,
     });
 
-    const result = await this.compact(signal);
+    let result: Awaited<ReturnType<Session["compact"]>>;
 
-    // Drop stale usage so the same pre-compact reading cannot re-fire every
-    // mid-drive turn before the next model call records a fresh prompt size.
-    // This is also what lets a prune-only compact skip the summary: the next
-    // real model call re-measures against the server's own token count.
-    this.lastUsage = undefined;
+    try {
+      result = await this.compact(signal);
+    } finally {
+      // Drop stale usage so the same pre-compact reading cannot re-fire every
+      // mid-drive turn (or every later send, if this compact threw) before the
+      // next model call records a fresh prompt size. This is also what lets a
+      // prune-only compact skip the summary: the next real model call
+      // re-measures against the server's own token count.
+      this.lastUsage = undefined;
+    }
 
     this.report({
       kind: "tool",
@@ -2843,23 +2864,17 @@ export class Session {
    */
   async compact(
     signal?: AbortSignal
-  ): Promise<{ before: number; after: number; prunedChars?: number }> {
-    const result = await compactConversation(
+  ): Promise<Omit<ICompactResult, "messages">> {
+    const { messages, ...summary } = await compactConversation(
       this.ctx.messages,
       this.provider,
       this.ctx.cwd,
       signal
     );
 
-    this.ctx.messages = result.messages;
+    this.ctx.messages = messages;
 
-    return {
-      before: result.before,
-      after: result.after,
-      ...(result.prunedChars === undefined
-        ? {}
-        : { prunedChars: result.prunedChars }),
-    };
+    return summary;
   }
 
   /** The live conversation (system + every exchange). Read-only view. */
@@ -3288,13 +3303,39 @@ export class Session {
     return { result: null };
   }
 
+  /** No gate (research, notes, chat): a reply that ANNOUNCES its next action
+   *  ("Let me record this thread.") without calling a tool is not an answer —
+   *  the model meant to keep going and the turn just ended early. Ending the
+   *  send there is what stopped hours-long research runs mid-stride. Pushes a
+   *  continue nudge (the caller forces a tool call), bounded like build nudges. */
+  private nudgeAnnouncedStep(content: string, buildNudges: number): boolean {
+    if (
+      this.hasGate ||
+      this.planMode ||
+      buildNudges >= LOOP_LIMITS.maxBuildNudges ||
+      !announcesNextStep(content)
+    ) {
+      return false;
+    }
+
+    this.report({
+      kind: "tool",
+      task: SESSION_ID,
+      message: "↳ announced a next step without doing it — continuing",
+    });
+    this.ctx.messages.push({ role: "user", content: CONTINUE_NUDGE });
+
+    return true;
+  }
+
   /** Handle a repetition-loop detection: stop (return a stuck result) once the
    *  recovery budget is spent, else re-steer toward one concrete action and
    *  return null so the caller forces a tool call next turn. */
-  private degenerationRecovery(
+  private async degenerationRecovery(
     degenerations: number,
-    turn: number
-  ): ISendResult | null {
+    turn: number,
+    signal?: AbortSignal
+  ): Promise<ISendResult | null> {
     if (degenerations >= MAX_DEGENERATION_RECOVERIES) {
       const errorMessages = this.state.prevGateErrors.map((e) => e.message);
       const handoff = buildSyntheticHandoff(
@@ -3313,11 +3354,36 @@ export class Session {
       return { status: "stuck", turns: turn, handoff };
     }
 
+    // Last rung: the loop survived two hotter retries, so the context itself is
+    // what keeps priming it — rebuild it (summary + recent turns) and try once
+    // more from there before giving up.
+    const lastRung = degenerations === MAX_DEGENERATION_RECOVERIES - 1;
+
     this.report({
       kind: "tool",
       task: SESSION_ID,
-      message: "⚠ repetition loop — forcing a concrete next action",
+      message: lastRung
+        ? "⚠ repetition loop again — compacting the context, then forcing a concrete next action"
+        : "⚠ repetition loop — forcing a concrete next action",
     });
+
+    if (lastRung) {
+      const result = await this.compact(signal);
+
+      this.lastUsage = undefined;
+      this.report({
+        kind: "tool",
+        task: SESSION_ID,
+        message: `⊙ ${compactSummaryLine(result)}`,
+      });
+    }
+
+    this.state.pendingModelOverride = {
+      ...this.state.pendingModelOverride,
+      temperature:
+        DEGENERATION_RETRY_TEMPERATURES[degenerations] ??
+        DEGENERATION_RETRY_TEMPERATURES[0],
+    };
     this.ctx.messages.push({
       role: "user",
       content: repetitionResteer(this.hasGate),
@@ -3808,7 +3874,9 @@ export class Session {
     // With no gate it's a conversational reply; with a gate but no edits this send,
     // decide whether that's a real answer or the narrate-instead-of-build failure.
     if (!this.hasGate || !edited) {
-      const outcome = this.resolveNoEditYield(res.content, turn, buildNudges);
+      const outcome = this.nudgeAnnouncedStep(res.content, buildNudges)
+        ? { result: null }
+        : this.resolveNoEditYield(res.content, turn, buildNudges);
 
       emitTiming(this.report, SESSION_ID, turn, turnStart, sendStart);
 
@@ -4211,15 +4279,20 @@ export class Session {
    *  a terminal stop) or a token-cap truncation (bounded smaller-call resteer).
    *  Returns a stop result, "retry" to continue with a forced tool, or null when
    *  the response is neither. Bumps the matching counter itself. */
-  private degenerationStop(
+  private async degenerationStop(
     res: IModelResponse,
     recoveries: { degenerations: number; truncations: number },
     turn: number,
     turnStart: number,
-    sendStart: number
-  ): ISendResult | "retry" | null {
+    sendStart: number,
+    signal?: AbortSignal
+  ): Promise<ISendResult | "retry" | null> {
     if (res.degenerated === true) {
-      const stop = this.degenerationRecovery(recoveries.degenerations, turn);
+      const stop = await this.degenerationRecovery(
+        recoveries.degenerations,
+        turn,
+        signal
+      );
 
       recoveries.degenerations += 1;
       emitTiming(this.report, SESSION_ID, turn, turnStart, sendStart);
@@ -4546,12 +4619,13 @@ export class Session {
       // concrete tool call next turn, then give up — see degenerationRecovery)
       // or a token-cap truncation (bounded smaller-call resteer; the broken
       // call was DROPPED at assembly, never executed with empty args).
-      const deg = this.degenerationStop(
+      const deg = await this.degenerationStop(
         res,
         recoveries,
         turn,
         turnStart,
-        sendStart
+        sendStart,
+        opts.signal
       );
 
       if (deg === "retry") {
@@ -4568,6 +4642,12 @@ export class Session {
       // going (we gate only when it stops). The guard's bookkeeping lives in
       // runToolTurn so this loop body stays lean.
       if (res.toolCalls.length > 0) {
+        // Tool calls got through: the model is working again, so the loop and
+        // timeout budgets start over — they bound a cascade, not a whole run.
+        recoveries.degenerations = 0;
+        timeouts = 0;
+        buildNudges = 0;
+
         const w = await this.handleWorkingTurn(
           res,
           {

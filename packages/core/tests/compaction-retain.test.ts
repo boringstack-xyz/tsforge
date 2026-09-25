@@ -2,7 +2,11 @@ import { test, expect, describe } from "bun:test";
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { IChatMessage, IProvider } from "../src/inference";
+import type {
+  IChatMessage,
+  ICompleteOptions,
+  IProvider,
+} from "../src/inference";
 import {
   compactConversation,
   compactSummaryLine,
@@ -11,6 +15,8 @@ import {
   RETAIN_CHARS,
   SPILL_DIR,
   SPILL_MARKER_PREFIX,
+  SUMMARY_INPUT_CHARS,
+  SUMMARY_MAX_TOKENS,
 } from "../src/loop/context-hygiene";
 
 const TEST_CWD = await mkdtemp(join(tmpdir(), "tsforge-compaction-test-"));
@@ -374,4 +380,97 @@ test("compaction preserves system messages at index > 0", async () => {
   expect(
     result.messages.some((m) => m.content.includes("[Summary of the earlier"))
   ).toBe(true);
+});
+
+/** A long research session: many user asks, each followed by a fat tool dump. */
+function longResearchHistory(steps = 60): IChatMessage[] {
+  const out: IChatMessage[] = [{ role: "system", content: "sys" }];
+
+  for (let i = 0; i < steps; i += 1) {
+    out.push({ role: "user", content: `ask ${String(i)}` });
+    out.push({
+      role: "assistant",
+      content: "reading",
+      toolCalls: [
+        {
+          id: `c${String(i)}`,
+          name: "browser_read",
+          arguments: { url: `https://f/${String(i)}` },
+        },
+      ],
+    });
+    out.push({
+      role: "tool",
+      content: "R".repeat(PRUNE_THRESHOLD_CHARS - 1),
+      toolCallId: `c${String(i)}`,
+    });
+  }
+
+  return out;
+}
+
+describe("compaction summary is bounded and cannot wedge the session", () => {
+  test("the summarizer gets a bounded transcript and a capped reply", async () => {
+    let seen = "";
+    let opts: ICompleteOptions | undefined;
+    const provider: IProvider = {
+      async complete(messages, o) {
+        seen = messages[1]?.content ?? "";
+        opts = o;
+
+        return { content: "brief", toolCalls: [] };
+      },
+    };
+
+    await compactConversation(longResearchHistory(300), provider, TEST_CWD);
+
+    // ~2.5MB of history in; the summary request must not carry it all — that
+    // cold prefill is what timed out on a local server at 80% of the window.
+    expect(seen.length).toBeLessThanOrEqual(SUMMARY_INPUT_CHARS + 200);
+    expect(seen).toContain("ask 0");
+    expect(seen).toContain("browser_read(https://f/2");
+    expect(seen).toContain("older tool/assistant messages omitted");
+    expect(opts?.maxTokens).toBe(SUMMARY_MAX_TOKENS);
+    expect(opts?.enableThinking).toBe(false);
+  });
+
+  test("a failed summary call still shrinks the context with a model-free brief", async () => {
+    const history = longResearchHistory();
+    const provider: IProvider = {
+      async complete() {
+        throw new Error("The operation timed out.");
+      },
+    };
+
+    const result = await compactConversation(history, provider, TEST_CWD);
+
+    expect(result.summaryFailed).toBe("The operation timed out.");
+    expect(result.after).toBeLessThan(result.before);
+    const brief = result.messages.find((m) => m.content.startsWith("[Summary"));
+
+    expect(brief?.content).toContain("- ask 0\n");
+    expect(brief?.content).toContain("- ask 55");
+    expect(hasNoOrphanToolResult(result.messages)).toBe(true);
+    expect(compactSummaryLine(result)).toContain("summary unavailable");
+  });
+
+  test("the caller's own abort still propagates", async () => {
+    const ctrl = new AbortController();
+    const provider: IProvider = {
+      async complete() {
+        ctrl.abort();
+
+        throw new Error("aborted");
+      },
+    };
+
+    await expect(
+      compactConversation(
+        longResearchHistory(),
+        provider,
+        TEST_CWD,
+        ctrl.signal
+      )
+    ).rejects.toThrow("aborted");
+  });
 });

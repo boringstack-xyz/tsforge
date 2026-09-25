@@ -63,6 +63,14 @@ The extension reconnects by itself whenever tsforge starts, and keeps retrying (
 
 `browser_read` picks between an article view and the whole page on its own. It falls back to the whole page when the article extractor would drop most of the text, which is what happens with forum replies.
 
+## Long runs
+
+Research sessions are meant to run for hours, so a single model hiccup doesn't end them:
+
+- **Repetition loops.** The retry is forced to make a tool call, at a higher temperature, and the repeated lines are removed from the history first. The loop budget counts only *consecutive* loops and starts over whenever a tool call succeeds. If three loops in a row get through, the context is compacted and tried once more before the session stops.
+- **"Let me record it." with no tool call.** When there's no gate, a reply that announces its next step without taking it gets a nudge to make the call. It is not treated as the final answer.
+- **Compaction.** The summary request is bounded. If it still fails, your requests are kept verbatim and the older tool output is dropped, so the context always shrinks.
+
 ## One browser, one session
 
 The bridge listens on `127.0.0.1:47823`. Only the first tsforge process gets the port. A second session shows `port 47823 in use` and offers no browser tools. Set `TSFORGE_BROWSER_PORT` (and the same port in the extension options) to run one elsewhere.
