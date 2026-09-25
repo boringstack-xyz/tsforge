@@ -1,7 +1,7 @@
 {
   "name": "tsforge",
   "type": "module",
-  "version": "0.53.3",
+  "version": "0.54.0",
   "license": "MIT",
   "description": "TypeScript coding harness with a deterministic gate, stack-aware guardrails, and stream-level correction.",
   "scripts": {
