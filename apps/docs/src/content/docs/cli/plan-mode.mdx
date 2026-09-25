@@ -3,7 +3,7 @@ title: Plan mode
 description: Read-only exploration, then approve to save a session-bound plan checklist and implement in the same session.
 ---
 
-Plan mode is the default interactive posture. The model can **read** your repo and **propose** a plan, but it cannot **edit** until you approve. On approve, tsforge validates the model's fenced plan JSON, writes a session-bound plan file, shows it in the Tasks rail, and the same session implements it.
+Plan mode is the default interactive posture in a folder with code. A folder with no code, such as research notes or an empty directory, starts in normal mode instead, because there's nothing to protect and plan mode would block saving notes. The model can **read** your repo and **propose** a plan, but it cannot **edit** until you approve. On approve, tsforge validates the model's fenced plan JSON, writes a session-bound plan file, shows it in the Tasks rail, and the same session implements it.
 
 ```text
 plan mode (default)

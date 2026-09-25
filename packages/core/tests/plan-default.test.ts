@@ -71,3 +71,32 @@ test("resumed posture wins over --plan (the saved read-only guarantee)", () => {
     false
   );
 });
+
+// Plan-first exists to protect CODE from unreviewed edits. In a folder with no
+// code (research notes, an empty dir) there is nothing to protect, and plan mode
+// withholds `note` — the agent could only read, and "write this down" was
+// answered with a plan-approval checklist. Start in normal mode there.
+test("a fresh session in a folder with no code does not start in plan mode", () => {
+  expect(resolveInitialPlanMode(args(), undefined, "default", false)).toBe(
+    false
+  );
+});
+
+test("an explicit request still wins in a no-code folder", () => {
+  expect(
+    resolveInitialPlanMode(args({ plan: true }), undefined, "default", false)
+  ).toBe(true);
+  expect(
+    resolveInitialPlanMode(
+      args({ policyMode: "plan" }),
+      undefined,
+      "default",
+      false
+    )
+  ).toBe(true);
+  expect(resolveInitialPlanMode(args(), true, "default", false)).toBe(true);
+});
+
+test("a folder with code keeps plan-first", () => {
+  expect(resolveInitialPlanMode(args(), undefined, "default", true)).toBe(true);
+});

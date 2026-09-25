@@ -32,6 +32,16 @@ t = Checker()
 # Closed USER card top badge (render/ansi.ts userBubble) — not the old `╭─ you`.
 BUBBLE_TOP = " USER "
 MODE_CHIP = " PLAN "  # top-strip mode chip (default mode)
+
+
+def project_dir(prefix):
+    """A temp PROJECT folder (has a package.json): plan-first — and so the PLAN
+    mode chip this script waits on — applies to folders with code; a folder with
+    no code (research notes) starts in normal mode."""
+    work = tempfile.mkdtemp(prefix=prefix)
+    with open(os.path.join(work, "package.json"), "w") as f:
+        f.write('{"name":"editor-e2e","private":true}\n')
+    return work
 ROWS, COLS = 40, 120
 
 
@@ -51,7 +61,7 @@ def boot(port, cwd):
 
 def scenario_typing(port):
     print("\n# typing + backspace + multiline (real editor)")
-    work = tempfile.mkdtemp(prefix="tsforge-ed-")
+    work = project_dir("tsforge-ed-")
     pid, m, got, buf = boot(port, work)
     try:
         t.check("editor boots (mode chip renders)", got)
@@ -82,7 +92,7 @@ def scenario_typing(port):
 
 def scenario_paste(port):
     print("\n# bracketed paste (real editor)")
-    work = tempfile.mkdtemp(prefix="tsforge-ed-")
+    work = project_dir("tsforge-ed-")
     pid, m, got, buf = boot(port, work)
     try:
         t.check("editor boots (mode chip renders)", got)
@@ -112,7 +122,7 @@ def scenario_paste(port):
 
 def scenario_at_picker(port):
     print("\n# @ file picker interaction (real editor)")
-    work = tempfile.mkdtemp(prefix="tsforge-ed-")
+    work = project_dir("tsforge-ed-")
     # Distinct names so the filter assertion can't false-match.
     for name, body in [
         ("alpha_target.ts", "export const a = 1;\n"),
@@ -156,7 +166,7 @@ def scenario_at_picker(port):
 
 def scenario_longline(port):
     print("\n# long-line wrap (real editor)")
-    work = tempfile.mkdtemp(prefix="tsforge-ed-")
+    work = project_dir("tsforge-ed-")
     pid, m, got, buf = boot(port, work)
     try:
         t.check("editor boots (mode chip renders)", got)

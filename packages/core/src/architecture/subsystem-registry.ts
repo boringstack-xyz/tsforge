@@ -32,6 +32,11 @@ export const SUBSYSTEM_REGISTRY: Readonly<Record<string, ISubsystemEntry>> = {
       "Headless Chromium oracle that render-checks a page as a gate stage",
     tier: "optional",
   },
+  "chrome-bridge": {
+    purpose:
+      "Localhost WebSocket bridge to the tsforge Chrome extension — read-only research in the user's browser",
+    tier: "optional",
+  },
   cli: {
     purpose: "Argument parsing, the interactive REPL, and per-mode wiring",
     tier: "core",

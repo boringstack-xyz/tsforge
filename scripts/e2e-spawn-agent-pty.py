@@ -180,6 +180,10 @@ def main():
     chk = Checker()
 
     work = tempfile.mkdtemp(prefix="tsforge-spawn-")
+    # A project folder: the PLAN chip (boot marker below) is plan-first, which
+    # applies to folders with code.
+    with open(os.path.join(work, "package.json"), "w") as f:
+        f.write('{"name":"spawn-e2e","private":true}\n')
     home = tempfile.mkdtemp(prefix="tsforge-home-")
     # Editor mode (the default): the live agent tree renders in the pinned region.
     pid, master = spawn_tsforge(port, {}, cwd=work, home=home)

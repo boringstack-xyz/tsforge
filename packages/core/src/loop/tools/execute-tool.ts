@@ -14,6 +14,18 @@ import { doAddDependency } from "./add-dependency";
 import { doWebFetch } from "./web-fetch";
 import { doWebSearch } from "./web-search";
 import { doWebBrowse } from "./web-browse";
+import {
+  doBrowserAdopt,
+  doBrowserClick,
+  doBrowserClose,
+  doBrowserNavigate,
+  doBrowserOpen,
+  doBrowserRead,
+  doBrowserScreenshot,
+  doBrowserScroll,
+  doBrowserTabs,
+} from "./browser-tools";
+import { doNote } from "./note-tool";
 import { doPackageInfo, doPackageDocs } from "./package-info";
 import { doScript } from "./script-tool";
 import { doSpawnAgent } from "./spawn-agent";
@@ -84,6 +96,16 @@ const HANDLERS: Record<ToolName, ToolHandler> = {
   [TOOL_NAME.webFetch]: doWebFetch,
   [TOOL_NAME.webSearch]: doWebSearch,
   [TOOL_NAME.webBrowse]: doWebBrowse,
+  [TOOL_NAME.browserTabs]: doBrowserTabs,
+  [TOOL_NAME.browserAdopt]: doBrowserAdopt,
+  [TOOL_NAME.browserOpen]: (a, c) => doBrowserOpen(a, c),
+  [TOOL_NAME.browserNavigate]: (a, c) => doBrowserNavigate(a, c),
+  [TOOL_NAME.browserRead]: (a, c) => doBrowserRead(a, c),
+  [TOOL_NAME.browserClick]: doBrowserClick,
+  [TOOL_NAME.browserScroll]: doBrowserScroll,
+  [TOOL_NAME.browserScreenshot]: (a, c) => doBrowserScreenshot(a, c),
+  [TOOL_NAME.browserClose]: doBrowserClose,
+  [TOOL_NAME.note]: (a, c) => doNote(a, c),
   // The script's stubs RPC back into executeTool — passed as `execute` here so
   // script-tool.ts never imports this module (no cycle), and a nested `script`
   // call is rejected (script is not in SCRIPT_EXPOSABLE_TOOLS).

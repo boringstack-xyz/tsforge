@@ -229,7 +229,10 @@ function lintPart(
     // --cache-strategy content: the default (mtime+size) can serve a stale CLEAN
     // entry when the gate runs right after `--fix` + prettier rewrite files —
     // same-size same-mtime-tick rewrites are exactly this pipeline's hot path.
-    command: `${envPrefix}bun ${shellQuote(ESLINT_BIN)} --no-config-lookup -c ${shellQuote(STRICT_CONFIG)} --cache --cache-strategy content --cache-location ${shellQuote(eslintCachePath(envPrefix))} --format json .`,
+    // --no-error-on-unmatched-pattern: a folder with nothing to lint (research
+    // notes, an empty greenfield dir) must pass, not exit 2 "all files ignored" —
+    // that was counted as a gate error the model could never fix.
+    command: `${envPrefix}bun ${shellQuote(ESLINT_BIN)} --no-config-lookup -c ${shellQuote(STRICT_CONFIG)} --no-error-on-unmatched-pattern --cache --cache-strategy content --cache-location ${shellQuote(eslintCachePath(envPrefix))} --format json .`,
     label: "strict TypeScript (tsforge)",
   };
 }

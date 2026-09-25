@@ -544,6 +544,9 @@ const SPECIAL_TOOLS = new Set<string>([
   TOOL_NAME.taskUncomplete,
   TOOL_NAME.taskAdd,
   TOOL_NAME.taskUpdate,
+  // `note` appends research notes to notes/<topic>.md — not gated source, no
+  // scoped edit, no re-gate. Not plan-mode-safe (it writes to disk).
+  TOOL_NAME.note,
 ]);
 
 test("every registered tool is classified read-only, mutating, or special", () => {

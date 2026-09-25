@@ -1,4 +1,5 @@
 import { reject, str, type IToolContext } from "./tool-context";
+import { htmlToReadableMarkdown } from "../../lib/html";
 import {
   isPrivateHost,
   validateFetchUrl,
@@ -178,42 +179,7 @@ async function realFetch(url: string): Promise<IFetchResponse> {
   return fetchFollowingRedirects(url, (target, init) => fetch(target, init));
 }
 
-function stripTags(html: string): string {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/** Readable extraction via jsdom + Mozilla Readability + Turndown — all local,
- *  lazy-loaded so they cost nothing until a fetch actually runs. Falls back to a
- *  crude tag-strip if those libs are unavailable or parsing fails. */
-async function realExtract(html: string, url: string): Promise<string> {
-  try {
-    const { JSDOM } = await import("jsdom");
-    const { Readability } = await import("@mozilla/readability");
-    const Turndown = (await import("turndown")).default;
-
-    const dom = new JSDOM(html, { url });
-    const article = new Readability(dom.window.document).parse();
-    const content = article?.content ?? "";
-
-    if (content.length === 0) {
-      return stripTags(html);
-    }
-
-    const title = article?.title ?? "";
-    const body = new Turndown().turndown(content);
-
-    return title.length > 0 ? `# ${title}\n\n${body}` : body;
-  } catch {
-    return stripTags(html);
-  }
-}
-
 const DEFAULT_DEPS: IWebFetchDeps = {
   fetchFn: realFetch,
-  extract: realExtract,
+  extract: htmlToReadableMarkdown,
 };

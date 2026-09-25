@@ -5,6 +5,11 @@ export const ENV_FLAG = {
   noLspTools: "TSFORGE_NO_LSP_TOOLS",
   tdd: "TSFORGE_TDD",
   webTools: "TSFORGE_WEB",
+  // Chrome research bridge: drive the user's real, logged-in Chrome through the
+  // tsforge extension (read + navigate only). Opt-in; port + private-host escape.
+  browser: "TSFORGE_BROWSER",
+  browserPort: "TSFORGE_BROWSER_PORT",
+  browserAllowPrivate: "TSFORGE_BROWSER_ALLOW_PRIVATE",
   noScriptTool: "TSFORGE_NO_SCRIPT",
   noGitTool: "TSFORGE_NO_GIT_TOOL",
   noGithub: "TSFORGE_NO_GITHUB",

@@ -24,6 +24,10 @@ export interface IPlanModeArgs {
  *      "default" when unset): a repo that opted into a specific autonomous
  *      posture ("acceptEdits", "ci", …) is honored; the bare "default" falls
  *      through to plan-first.
+ *   5. A folder with NO code (research notes, an empty dir) starts in normal
+ *      mode: plan-first protects code from unreviewed edits, and there is none —
+ *      while plan mode withholds `note`, so a research session could only read
+ *      and "write this down" came back as a plan-approval checklist.
  *
  * This is applied ONLY in the interactive REPL. One-shot / headless / eval / CI
  * paths keep their autonomous behavior — plan mode needs a human to approve.
@@ -34,7 +38,8 @@ export interface IPlanModeArgs {
 export function resolveInitialPlanMode(
   args: IPlanModeArgs,
   resumedPlanMode: boolean | undefined,
-  configuredMode: PolicyMode
+  configuredMode: PolicyMode,
+  workspaceHasCode = true
 ): boolean {
   if (resumedPlanMode !== undefined) {
     return resumedPlanMode;
@@ -52,5 +57,5 @@ export function resolveInitialPlanMode(
     return configuredMode === "plan";
   }
 
-  return true;
+  return workspaceHasCode;
 }

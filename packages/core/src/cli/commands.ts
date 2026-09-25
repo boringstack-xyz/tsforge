@@ -93,6 +93,10 @@ export const COMMANDS: readonly ICommandSpec[] = [
     summary: "settings hub: model, mode, gate, tools",
   },
   {
+    name: "/browser",
+    summary: "Chrome research bridge: status + how to pair the extension",
+  },
+  {
     name: "/setup",
     summary: "infer + write project conventions (the setup wizard)",
   },

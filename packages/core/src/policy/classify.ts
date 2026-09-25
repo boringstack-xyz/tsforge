@@ -90,6 +90,21 @@ const KIND_BY_TOOL: Readonly<Record<string, ActionKind>> = {
   [TOOL_NAME.webFetch]: "network",
   [TOOL_NAME.webSearch]: "network",
   [TOOL_NAME.webBrowse]: "network",
+  // Chrome research bridge: egress through the user's browser → `network` (so a
+  // repo/mode can deny it like the web tools; allowed in plan, it can't mutate
+  // the workspace). Absent here → `unknown` → silent deny (the DOA class).
+  [TOOL_NAME.browserTabs]: "network",
+  [TOOL_NAME.browserAdopt]: "network",
+  [TOOL_NAME.browserOpen]: "network",
+  [TOOL_NAME.browserNavigate]: "network",
+  [TOOL_NAME.browserRead]: "network",
+  [TOOL_NAME.browserClick]: "network",
+  [TOOL_NAME.browserScroll]: "network",
+  [TOOL_NAME.browserScreenshot]: "network",
+  [TOOL_NAME.browserClose]: "network",
+  // `note` appends to notes/<topic>.md — a low-risk file write: allowed wherever
+  // edits are, denied in plan mode.
+  [TOOL_NAME.note]: "edit_file",
   // Both call an external capability endpoint → network egress is the salient
   // risk (so a repo/mode can deny/ask them like the web tools).
   [TOOL_NAME.readImage]: "network",

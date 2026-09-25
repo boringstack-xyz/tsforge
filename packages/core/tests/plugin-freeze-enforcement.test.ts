@@ -119,7 +119,11 @@ describe("F19 enforcement: write guard", () => {
     await drift();
 
     await expect(runWriteGuard(ctx, "a.ts")).rejects.toThrow(/changed on disk/);
-  });
+    // Cold work: a fresh TypeScript program + ESLint engine for a new plugin
+    // workspace — ~1s locally, 5s+ on a shared CI runner (it timed out there at
+    // bun's default 5s, and the late rejection then surfaced as a bogus
+    // "expected promise that rejects"). Correctness test, not a perf budget.
+  }, 30_000);
 });
 
 describe("F19 enforcement: the write path end to end", () => {
@@ -164,7 +168,8 @@ describe("F19 enforcement: the write path end to end", () => {
         (e) => e.kind === "stuck" && e.message.includes("changed on disk")
       )
     ).toBe(true);
-  });
+    // Same cold TypeScript + ESLint start-up as the write-guard test above.
+  }, 30_000);
 });
 
 describe("F19 enforcement: command gate", () => {

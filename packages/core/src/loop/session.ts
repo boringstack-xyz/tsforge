@@ -27,6 +27,7 @@ import {
   rememberNewChildren,
 } from "../gate/dirty-packages";
 import { commandGate, type IGate } from "../gate/gate-runner";
+import { workspaceHasCode } from "../gate/workspace-code";
 import type { IStackProfile } from "../stack-detection";
 import {
   type ADD_DEPENDENCY_TOOL,
@@ -52,7 +53,11 @@ import {
   SENTRY_WRITE_TOOL,
   SENTRY_MARKER,
   SENTRY_DRIVE_GUIDANCE,
+  BROWSER_MARKER,
+  BROWSER_RESEARCH_GUIDANCE,
+  NOTE_TOOL,
 } from "../agent";
+import { openBrowserSession, type BridgeStatus } from "../chrome-bridge";
 import type { IAgentSpec } from "../agent/agent-spec";
 import type { SpawnAgentFn, IToolContext, EditGuard } from "./tools";
 import { resolveLinearCapability } from "./tools/linear-ops";
@@ -116,6 +121,7 @@ import {
   nextReadonlyStreak,
   streakAfterReadonlyResteer,
   toolCallsAttemptWrite,
+  toolCallsDoResearch,
 } from "./readonly-spin";
 import {
   HISTORY_META_PARK_AT,
@@ -178,6 +184,7 @@ import {
   settleGate,
   announceTaskDone,
   toolsFor,
+  browserTools,
   tryExpertRescue,
 } from "./turn";
 import { parkOrRaiseHand } from "./raise-hand";
@@ -542,9 +549,10 @@ export const PLAN_APPROVED_NOTE =
   "parent_id to nest); when an item's title/detail/files/verify is wrong, call " +
   "task_update; when done work needs redoing, task_uncomplete then continue. " +
   "Do not keep discovered work only in chat — put it on the checklist. " +
-  "task_complete RUNS THE GATE and only marks done when green — never invent " +
-  "done, never mark an item complete while the gate is red. Finishing requires " +
-  "BOTH gate green AND every checklist item done. Walk items in plan order " +
+  "With a code gate, task_complete RUNS THE GATE and only marks done when " +
+  "green — never invent done, never mark an item complete while the gate is " +
+  "red; finishing requires BOTH gate green AND every checklist item done. With " +
+  "no code gate (research/notes work) it just records the item. Walk items in plan order " +
   "(vertical slices in the order approved). Implement now: task_focus the first " +
   "open item, then emit the tool calls. Do not re-explore or restate the plan.";
 
@@ -710,11 +718,19 @@ const TRUNCATION_RESTEER =
   "with edit), or split the work across multiple calls. No prose.";
 
 /** Pushed after a repetition loop — break the spiral by demanding ONE concrete
- *  action (paired with a forced tool call, which can't loop in prose). */
-const REPETITION_RESTEER =
-  "You started repeating yourself. STOP — do not re-explain or re-decide. Emit " +
-  "the SINGLE next tool call that makes concrete progress (create or edit ONE " +
-  "file). No prose.";
+ *  action (paired with a forced tool call, which can't loop in prose). "Concrete
+ *  progress" is an edit only when there is code to fix (a live gate); in a
+ *  research/notes session it is saving findings or moving on. */
+export function repetitionResteer(liveGate: boolean): string {
+  const step = liveGate
+    ? "create or edit ONE file"
+    : "save what you have found with `note`, or move on to the next page/source";
+
+  return (
+    "You started repeating yourself. STOP — do not re-explain or re-decide. Emit " +
+    `the SINGLE next tool call that makes concrete progress (${step}). No prose.`
+  );
+}
 
 /** Pushed on a read-only spin in a BUILD (gated) session — demand a concrete edit. */
 const READONLY_RESTEER_BUILD =
@@ -725,6 +741,9 @@ const READONLY_RESTEER_BUILD =
 
 /** Pushed on a read-only spin in a CONVERSATIONAL (no-gate) session — demand an
  *  answer (there is nothing to edit, so the failure is never wrapping up). */
+/** The build execution mode (strict-TS drive-to-green contract). */
+const DRIVE_MODE = "drive-to-green";
+
 const READONLY_RESTEER_ANSWER =
   "You have made many tool calls in a row without answering — only reading or " +
   "searching. You have enough context now. STOP reading and give your answer, " +
@@ -857,7 +876,7 @@ function conventionsOffered(cfg: ISessionConfig): boolean {
  * ungated stays off. BoringStack (and other adapters) keep their injected compose.
  */
 function withDefaultHouseConventions(cfg: ISessionConfig): ISessionConfig {
-  if (cfg.executionMode !== "drive-to-green") {
+  if (cfg.executionMode !== DRIVE_MODE) {
     return cfg;
   }
 
@@ -887,7 +906,7 @@ function withDefaultHouseConventions(cfg: ISessionConfig): ISessionConfig {
 
 /** `check` is live only when the backend opts in AND the prompt is drive-to-green. */
 function isOfferCheckActive(cfg: ISessionConfig): boolean {
-  return cfg.offerCheck === true && cfg.executionMode === "drive-to-green";
+  return cfg.offerCheck === true && cfg.executionMode === DRIVE_MODE;
 }
 
 /** The STATIC system policy (identity, tools, conventions, workspace map, guidance) +
@@ -895,20 +914,78 @@ function isOfferCheckActive(cfg: ISessionConfig): boolean {
  *  (autonomous builds) gets the strict expert-TS implement contract; `chat` (default)
  *  gets the open-ended assistant framing. The scope/check facts live in the task
  *  contract (rebuilt per change), NOT baked statically here. */
+/** Tools that only make sense against a live gate. */
+const GATE_ONLY_TOOLS: ReadonlySet<string> = new Set([
+  TOOL_NAME.check,
+  TOOL_NAME.pullConventions,
+]);
+
+/** How long a "no code yet" workspace probe is trusted before re-scanning. */
+const CODE_PROBE_TTL_MS = 2000;
+
+export type PromptMode = "drive-to-green" | "chat";
+
+/** The mode-specific HEAD of the system prompt — everything that differs between
+ *  building (strict-TS drive-to-green contract, TDD, conventions) and assisting.
+ *  Kept a separate prefix so the session can swap it in place when the gate
+ *  wakes (code appeared) or is cleared, without rebuilding the rest. */
+export function promptHead(
+  mode: PromptMode,
+  cfg: ISessionConfig,
+  conventions: IConventions
+): string {
+  if (mode === "chat") {
+    return `${buildChatSystem(conventions)}\n\n`;
+  }
+
+  const base = buildDriveToGreenSystem(
+    conventions,
+    cfg.offerCheck === true,
+    conventionsOffered(cfg)
+  );
+  // TDD-first (default ON) — the headless build prompt gets this via
+  // buildSystemPrompt; the interactive build path injects it here. Build mode
+  // only: test-first guidance is noise in a research or chat session.
+  const tdd = flags.tdd() ? `${buildTddGuidance(conventions)}\n\n` : "";
+  // Short pull-before-first-write contract + topic names only — never full guide
+  // bodies. Full text arrives via `pull_conventions` (and optional PUSH after a red).
+  const conv = conventionsOffered(cfg)
+    ? `${cfg.conventions?.buildGuides() ?? ""}\n\n`
+    : "";
+
+  return `${base}\n\n${tdd}${conv}`;
+}
+
+/** The prompt mode a new session starts in: build mode only when it is a
+ *  drive-to-green session whose gate is live — an auto gate in a workspace with
+ *  no code starts DORMANT, so the session starts as an assistant. */
+function initialPromptMode(cfg: ISessionConfig): PromptMode {
+  if (cfg.executionMode !== DRIVE_MODE) {
+    return "chat";
+  }
+
+  return startsDormant(cfg) ? "chat" : DRIVE_MODE;
+}
+
+/** An AUTO gate (no explicit runner) in a workspace with no JS/TS code: nothing
+ *  for the strict TypeScript gate to check, so it waits for code. `accept` is
+ *  NOT consulted: alongside `autoGate` it is only the auto gate's initially
+ *  resolved command (the REPL passes both), not a user-chosen gate. */
+function startsDormant(cfg: ISessionConfig): boolean {
+  return (
+    cfg.gate === undefined &&
+    cfg.autoGate !== undefined &&
+    !workspaceHasCode(cfg.cwd)
+  );
+}
+
 function systemPrompt(
   cfg: ISessionConfig,
   workspaceMap: string,
   conventions: IConventions,
   decisionBrief: string | null = null
 ): string {
-  const base =
-    cfg.executionMode === "drive-to-green"
-      ? buildDriveToGreenSystem(
-          conventions,
-          cfg.offerCheck === true,
-          conventionsOffered(cfg)
-        )
-      : buildChatSystem(conventions);
+  const head = promptHead(initialPromptMode(cfg), cfg, conventions);
 
   const lines = [`Workspace: ${cfg.cwd}`];
 
@@ -919,12 +996,6 @@ function systemPrompt(
   const prefix = workspaceMap.length > 0 ? `${workspaceMap}\n\n` : "";
   const decisions = decisionBriefBlock(decisionBrief);
 
-  // TDD-first (default ON) — the headless build prompt gets this via
-  // buildSystemPrompt, but the interactive path never did, so the CLI agent was
-  // never TOLD to write tests first and leaned entirely on the late gate. Inject
-  // it here too so test-first is the out-of-the-box default everywhere.
-  const tdd = flags.tdd() ? `${buildTddGuidance(conventions)}\n\n` : "";
-
   // Which copy wins when history holds two. Superseded reads / checklists are no
   // longer stubbed per turn (that rewrote old messages and cost a cold prefill),
   // so the ordering rule has to be stated — and this is the one place it can sit
@@ -932,19 +1003,13 @@ function systemPrompt(
   // interactive path does not go through buildSystemPrompt.
   const freshness = `${buildHistoryFreshnessGuidance()}\n\n`;
 
-  // Short pull-before-first-write contract + topic names only — never full guide bodies.
-  // Full text arrives via `pull_conventions` (and optional PUSH after a red).
-  const conv = conventionsOffered(cfg)
-    ? `${cfg.conventions?.buildGuides() ?? ""}\n\n`
-    : "";
-
   const contract = taskContract(
     cfg.files ?? [],
     cfg.accept,
-    isOfferCheckActive(cfg)
+    isOfferCheckActive(cfg) && initialPromptMode(cfg) === DRIVE_MODE
   );
 
-  return `${base}\n\n${freshness}${tdd}${conv}${decisions}${prefix}${lines.join("\n")}\n\n${contract}`;
+  return `${head}${freshness}${decisions}${prefix}${lines.join("\n")}\n\n${contract}`;
 }
 
 /** The system content minus its VOLATILE blocks, for resume comparison: the
@@ -1336,6 +1401,14 @@ function makeAutoGateRunner(
   return { runner, state };
 }
 
+/** The Chrome research bridge's tool-context field: `{ browser }` when
+ *  TSFORGE_BROWSER is on (process-wide bridge, per-session state), else `{}`. */
+async function browserToolField(): Promise<Pick<IToolContext, "browser">> {
+  return flags.browser()
+    ? { browser: await openBrowserSession(flags.browserPort()) }
+    : {};
+}
+
 export class Session {
   private readonly provider: IProvider;
   private readonly cfg: ISessionConfig;
@@ -1345,7 +1418,20 @@ export class Session {
     | typeof ADD_DEPENDENCY_TOOL
     | NonNullable<ReturnType<typeof buildSpawnAgentTool>>
   )[];
-  private hasGate: boolean;
+  /** A gate is CONFIGURED (explicit command/runner or the auto gate). Whether it
+   *  is LIVE also depends on dormancy — read `hasGate`, not this. */
+  private gateConfigured: boolean;
+  /** The auto gate saw code once — it stays awake for the rest of the session. */
+  private gateAwake = false;
+  /** The user explicitly cleared the gate (`/gate ""`) — build-only tools go. */
+  private gateCleared = false;
+  /** Cached workspace probe (re-run when the touched set grows or it goes stale). */
+  private codeProbe: { at: number; touched: number; hasCode: boolean } | null =
+    null;
+  /** Which mode head the system message currently starts with (null = unknown,
+   *  e.g. a resumed transcript from an older prompt layout — never swapped). */
+  private promptMode: PromptMode | null = null;
+  private promptHeads: Readonly<Record<PromptMode, string>> | null = null;
   /** Current 1-based turn inside the active drive — fed to mid-turn `check` /
    *  `task_complete` gate progress lines so they match settle (not hardcoded 0). */
   private driveTurn = 0;
@@ -1442,7 +1528,7 @@ export class Session {
     this.cfg = cfg;
     this.report = cfg.report ?? ((): void => undefined);
     this.autoGateState = autoGateState;
-    this.hasGate =
+    this.gateConfigured =
       cfg.gate !== undefined ||
       cfg.autoGate !== undefined ||
       (cfg.accept !== undefined && cfg.accept.length > 0);
@@ -1649,6 +1735,10 @@ export class Session {
             report({ kind: "tool", task: SESSION_ID, message });
           });
 
+    // Opt-in Chrome research bridge (TSFORGE_BROWSER). One server per process —
+    // a /clear rebuild reuses it. Tools are advertised by setBrowserCapability.
+    const browserField = await browserToolField();
+
     // Opt-in decision memory (HTTP/MCP). Fail-soft: missing/down backend → null brief.
     const { provider: decisionMemory, brief: decisionBrief } =
       await loadDecisionMemoryAtStart(
@@ -1671,7 +1761,7 @@ export class Session {
     // in seconds — instead of only at the ~90s gate. STRICT_CONFIG carries the moat.
     const lintFile =
       cfg.lintFile ??
-      (cfg.executionMode === "drive-to-green"
+      (cfg.executionMode === DRIVE_MODE
         ? makeFileLinter(
             "core",
             cfg.cwd,
@@ -1694,6 +1784,7 @@ export class Session {
           : {}),
         ...(policyRules === undefined ? {} : { policyRules }),
         ...(mcpRegistry === null ? {} : { mcpRegistry }),
+        ...browserField,
         ...(cfg.editGuard === undefined ? {} : { editGuard: cfg.editGuard }),
         // A real human is present (the interactive REPL) → ask_user can pause for an
         // answer; absent/false ⇒ unattended, ask_user proceeds without hanging. Set
@@ -1757,6 +1848,11 @@ export class Session {
 
     const session = new Session(cfg, ctx, autoGateState);
 
+    session.adoptPromptHeads(conventions);
+    // Reconcile once at birth: a resumed transcript's saved head, or any drift
+    // between the config and the live gate state, is corrected before turn 1.
+    session.syncGateMode();
+
     session.decisionMemory = decisionMemory;
     session.autoRetain = projectConfig.providers?.memory?.autoRetain !== false;
 
@@ -1766,6 +1862,23 @@ export class Session {
     session.ttsrManager = await initTtsrManager(cfg.cwd, report, SESSION_ID);
 
     return session;
+  }
+
+  /** Record both mode heads and which one the system message starts with, so
+   *  the head can be swapped when the gate wakes or is cleared. */
+  private adoptPromptHeads(conventions: IConventions): void {
+    const heads = {
+      [DRIVE_MODE]: promptHead(DRIVE_MODE, this.cfg, conventions),
+      chat: promptHead("chat", this.cfg, conventions),
+    };
+    const system = this.ctx.messages[0]?.content ?? "";
+
+    this.promptHeads = heads;
+    this.promptMode = system.startsWith(heads[DRIVE_MODE])
+      ? DRIVE_MODE
+      : system.startsWith(heads.chat)
+        ? "chat"
+        : null;
   }
 
   /** The current gate command (empty when none). */
@@ -1927,18 +2040,129 @@ export class Session {
 
     if (typeof arg === "string") {
       this.ctx.task.accept = arg;
-      this.hasGate = arg.length > 0;
+      this.gateConfigured = arg.length > 0;
     } else {
       this.ctx.gate.runner = arg;
-      this.hasGate = true;
+      this.gateConfigured = true;
     }
 
-    // task_complete needs runTaskGate; wire it when a gate appears mid-session.
-    if (this.hasGate && this.ctx.tool.runTaskGate === undefined) {
-      this.ctx.tool.runTaskGate = () => runCheckGate(this.ctx, this.driveTurn);
+    this.gateCleared = !this.gateConfigured;
+
+    // Prompt head, check/task_complete seams and task contract follow the gate.
+    this.syncGateMode();
+  }
+
+  /** The gate is LIVE: configured, and not an auto gate waiting for code. Every
+   *  drive-to-green mechanism (settle, near-green, no-tool nudge, forced gates,
+   *  readonly write-forcing) keys off this. */
+  private get hasGate(): boolean {
+    return this.gateConfigured && !this.gateDormant();
+  }
+
+  /** An AUTO gate in a workspace with no JS/TS code yet: nothing for the strict
+   *  TypeScript gate to check (ESLint on a notes folder is red forever), so the
+   *  session behaves as an assistant until code appears — then the gate wakes and
+   *  stays awake. Explicit gates are never dormant. */
+  gateDormant(): boolean {
+    if (
+      !this.gateConfigured ||
+      this.gateAwake ||
+      this.cfg.gate !== undefined ||
+      this.cfg.autoGate === undefined ||
+      this.autoGateState?.active !== true
+    ) {
+      return false;
+    }
+
+    if (!this.probeCode()) {
+      return true;
+    }
+
+    this.gateAwake = true;
+    this.report({
+      kind: "tool",
+      task: SESSION_ID,
+      message: "gate awake — code detected in the workspace",
+    });
+    this.syncGateMode();
+
+    return false;
+  }
+
+  private probeCode(): boolean {
+    const touched = this.ctx.tool.touched?.size ?? 0;
+    const now = Date.now();
+    const cached = this.codeProbe;
+
+    if (
+      cached !== null &&
+      cached.touched === touched &&
+      now - cached.at < CODE_PROBE_TTL_MS
+    ) {
+      return cached.hasCode;
+    }
+
+    const hasCode = workspaceHasCode(this.ctx.cwd);
+
+    this.codeProbe = { at: now, touched, hasCode };
+
+    return hasCode;
+  }
+
+  /** Make the prompt head, the `check`/`task_complete` seams and the task
+   *  contract match whether the gate is live. Idempotent. */
+  private syncGateMode(): void {
+    const suppressed = this.buildModeSuppressed();
+    const want: PromptMode =
+      !suppressed && this.cfg.executionMode === DRIVE_MODE
+        ? DRIVE_MODE
+        : "chat";
+
+    this.swapPromptHead(want);
+
+    if (suppressed) {
+      delete this.ctx.tool.runTaskGate;
+      delete this.ctx.tool.runCheck;
+    } else {
+      // Restore exactly what construction wires: `check` per offerCheck,
+      // task_complete's gate whenever a gate is configured.
+      if (this.offerCheckActive) {
+        this.ctx.tool.runCheck ??= () => runCheckGate(this.ctx, this.driveTurn);
+      }
+
+      if (this.gateConfigured) {
+        this.ctx.tool.runTaskGate ??= () =>
+          runCheckGate(this.ctx, this.driveTurn);
+      }
     }
 
     this.refreshTaskContract();
+  }
+
+  /** Build mode is switched OFF only for an auto gate still waiting for code or
+   *  a gate the user cleared. A session that was simply never given a gate
+   *  (tests, hosts that attach one per slice) keeps its configured mode. */
+  private buildModeSuppressed(): boolean {
+    return this.gateCleared || this.gateDormant();
+  }
+
+  private swapPromptHead(want: PromptMode): void {
+    const from = this.promptMode;
+    const heads = this.promptHeads;
+    const system = this.ctx.messages[0];
+
+    if (from === null || from === want || heads === null) {
+      return;
+    }
+
+    if (system?.role !== "system" || !system.content.startsWith(heads[from])) {
+      this.promptMode = null;
+
+      return;
+    }
+
+    system.content = heads[want] + system.content.slice(heads[from].length);
+    this.promptMode = want;
   }
 
   /** Set the per-feature expert rescue target — the editable file the expert repairs
@@ -2219,8 +2443,8 @@ export class Session {
       "Checklist changes ONLY via task_list / task_focus / task_complete / task_uncomplete / task_add / task_update.",
       "Living plan: if you discover missing work (yours or the human's), task_add it — do not leave it only in chat.",
       "If an item's scope/title/detail drifts, task_update; if done work must be redone, task_uncomplete.",
-      "task_complete runs the gate — an item can be done only when the gate is green.",
-      "Finished requires gate green AND every checklist item done.",
+      "When the session has a code gate, task_complete runs it — an item can be done only when the gate is green, and finished requires gate green AND every item done.",
+      "With no code gate (research, notes, non-code work), task_complete just records the item done; finished means every item done.",
     ].join("\n");
   }
 
@@ -2366,7 +2590,10 @@ export class Session {
    *  `ctx.task`, replacing the old block in place. The static policy above the
    *  marker is untouched. No system message yet (shouldn't happen) ⇒ no-op. */
   private refreshTaskContract(): void {
-    rebuildTaskContract(this.ctx, this.offerCheckActive);
+    rebuildTaskContract(
+      this.ctx,
+      this.offerCheckActive && !this.buildModeSuppressed()
+    );
   }
 
   /** Update the context window mid-session (e.g. after a `/model` hot-swap to a
@@ -2516,6 +2743,48 @@ export class Session {
     this.guideOnce(SENTRY_MARKER, SENTRY_DRIVE_GUIDANCE);
 
     return true;
+  }
+
+  /** Advertise the browser_* tools + `note` when this session holds the Chrome
+   *  bridge (TSFORGE_BROWSER) and appends the research guidance once. Returns the
+   *  bridge status for the boot chip, or null when the feature is off. A bridge
+   *  another tsforge process owns (`in-use`) advertises nothing. Idempotent. */
+  setBrowserCapability(): BridgeStatus | null {
+    const browser = this.ctx.tool.browser;
+
+    if (browser === undefined) {
+      return null;
+    }
+
+    const status = browser.bridge.status();
+
+    if (status === "in-use") {
+      return status;
+    }
+
+    const vision = this.tools.some(
+      (t) => t.function.name === TOOL_NAME.readImage
+    );
+
+    this.addIntegrationTools([
+      ...browserTools({ browser: true, vision }),
+      NOTE_TOOL,
+    ]);
+    this.guideOnce(BROWSER_MARKER, BROWSER_RESEARCH_GUIDANCE);
+
+    return status;
+  }
+
+  /** Turn the Chrome bridge on mid-session (the /config toggle). */
+  async enableBrowser(): Promise<BridgeStatus> {
+    this.ctx.tool.browser ??= await openBrowserSession(flags.browserPort());
+
+    return this.setBrowserCapability() ?? "in-use";
+  }
+
+  /** Live bridge status (null when the feature is off) — for /browser. */
+  browserStatus(): BridgeStatus | null {
+    return this.ctx.tool.browser?.bridge.status() ?? null;
   }
 
   /** Append the given tool schemas to the advertised set if absent (idempotent). */
@@ -2787,6 +3056,17 @@ export class Session {
       this.greenfieldMode
     );
 
+    // An auto gate waiting for code, or a gate the user cleared: the gate-only
+    // tools have nothing to act on — `check` would lint an empty workspace and
+    // `pull_conventions` pushes TS house rules into non-code work. (A session
+    // that was simply never given a gate — e.g. a host that attaches one per
+    // slice — keeps them.)
+    if (this.buildModeSuppressed()) {
+      offeredTools = offeredTools.filter(
+        (t) => !GATE_ONLY_TOOLS.has(t.function.name)
+      );
+    }
+
     // Readonly-spin recovery: withhold read/search so soft text cannot be ignored.
     if (this.forceWriteTools && !this.planMode) {
       const forced = filterWriteForceTools(offeredTools);
@@ -3038,7 +3318,10 @@ export class Session {
       task: SESSION_ID,
       message: "⚠ repetition loop — forcing a concrete next action",
     });
-    this.ctx.messages.push({ role: "user", content: REPETITION_RESTEER });
+    this.ctx.messages.push({
+      role: "user",
+      content: repetitionResteer(this.hasGate),
+    });
 
     return null;
   }
@@ -3345,7 +3628,11 @@ export class Session {
         ? 0
         : nextReadonlyStreak({
             previous: carry.readonlyStreak,
-            progressed,
+            // Without a live gate there is no code to write: fetching and
+            // reading pages IS the work, not a stall (research sessions).
+            progressed:
+              progressed ||
+              (!this.hasGate && toolCallsDoResearch(res.toolCalls)),
             attemptedWrite,
           });
 
@@ -3366,7 +3653,9 @@ export class Session {
 
     // Re-steered: keep streak hot + force write tools next turn (soft text alone fails).
     if (spin === "retry") {
-      this.forceWriteTools = true;
+      // Forcing create/edit only makes sense when there is code to fix; without
+      // a live gate the re-steer asks for an answer, so leave the tools alone.
+      this.forceWriteTools = this.hasGate;
 
       return {
         ...base,
