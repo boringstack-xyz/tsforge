@@ -48,7 +48,7 @@
     },
     "apps/docs": {
       "name": "@tsforge/docs",
-      "version": "0.53.3",
+      "version": "0.54.0",
       "dependencies": {
         "@astrojs/markdown-remark": "^7.3.0",
         "@astrojs/react": "6.0.5",
@@ -80,7 +80,7 @@
     },
     "packages/core": {
       "name": "@agjs/tsforge",
-      "version": "0.53.8",
+      "version": "0.54.0",
       "bin": {
         "tsforge": "./bin/tsforge.js",
       },
