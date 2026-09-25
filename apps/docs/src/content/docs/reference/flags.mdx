@@ -118,7 +118,7 @@ Extra gate steps (default off; each skips cleanly when nothing applies). See [Ho
 | `TSFORGE_REPETITION_PENALTY` | off | vLLM repetition penalty |
 | `TSFORGE_THINKING_BUDGET` | unset | reasoning token cap |
 | `TSFORGE_CONTEXT_WINDOW` | `32768` | context window |
-| `TSFORGE_COMPACT_AT` | `0.8` | auto-compact threshold |
+| `TSFORGE_COMPACT_AT` | `0.8` | auto-compact threshold. The summary call is bounded (≤60k chars in, 2048 tokens out, 3 min); if it still fails, tsforge keeps your requests verbatim and drops the older tool output instead of retrying forever |
 
 ## Judge (eval scripts)
 
