@@ -51,9 +51,14 @@ install_from_npm() {
   # in its dependency-tree builder (oven-sh/bun#31652) but not in this
   # installer-level check, so it's still broken on 1.4.0. npm doesn't share
   # that code path.
+  #
+  # --prefer-online / --no-cache: both package managers otherwise resolve
+  # `@latest` from a locally cached copy of the package metadata, so for a while
+  # after a release the installer kept reinstalling the PREVIOUS version while
+  # reporting success.
   if command -v npm >/dev/null 2>&1; then
     info "Trying npm registry (npm install -g @agjs/tsforge)..."
-    if npm install -g @agjs/tsforge@latest; then
+    if npm install -g @agjs/tsforge@latest --prefer-online; then
       info "Installed tsforge from npm."
       print_done
       return 0
@@ -62,7 +67,7 @@ install_from_npm() {
   fi
 
   info "Trying npm registry (bun install -g @agjs/tsforge)..."
-  if bun install -g @agjs/tsforge@latest; then
+  if bun install -g @agjs/tsforge@latest --no-cache; then
     info "Installed tsforge from npm."
     print_done
     return 0
@@ -108,7 +113,33 @@ install_from_git() {
   info "Linked tsforge globally from ${TSFORGE_LIB}/packages/core"
 }
 
+# Report what actually runs as `tsforge`: the installed version, and a warning
+# when a different (usually older) install earlier on PATH shadows this one.
+report_installed() {
+  local found
+  found="$(command -v tsforge 2>/dev/null || true)"
+
+  if [ -z "${found}" ]; then
+    return 0
+  fi
+
+  info "tsforge on PATH: ${found} ($(tsforge --version 2>/dev/null || echo 'version unknown'))"
+
+  # Unique paths only: a PATH that lists one directory twice is not two installs.
+  local all
+  all="$(type -a -p tsforge 2>/dev/null | awk '!seen[$0]++' || true)"
+
+  if [ "$(printf '%s\n' "${all}" | grep -c .)" -gt 1 ]; then
+    warn "more than one tsforge is on your PATH — the first one wins:"
+    printf '%s\n' "${all}" | sed 's/^/  /' >&2
+    warn "remove the ones you don't use so an old copy can't shadow this install."
+  fi
+}
+
 print_done() {
+  hash -r 2>/dev/null || true
+  report_installed
+
   cat <<EOF
 
 tsforge is installed.
