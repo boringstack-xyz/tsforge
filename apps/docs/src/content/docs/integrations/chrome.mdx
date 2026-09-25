@@ -1,0 +1,78 @@
+---
+title: Research in your Chrome
+description: "Let a local tsforge session read pages in your real, logged-in Chrome — forums, dashboards, docs behind a login — through the tsforge extension. Read and navigate only."
+---
+
+`web_fetch` and `web_browse` see the public web as a logged-out stranger. The **Chrome bridge** lets the agent read pages in *your* browser instead, with your cookies and logins. It uses a small tsforge Chrome extension, and the agent's tabs live in a **"tsforge" tab group** so you can always see which ones it is using.
+
+Pair it with a local model and long research is free. Open a forum thread you're logged into and say:
+
+```text
+I've opened a forum thread in my active tab. Read the whole thread (every page) and save notes.
+```
+
+The agent adopts the tab and reads it chunk by chunk, following "next page" and "show more replies". It appends findings to `notes/<topic>.md` as it goes, then summarises.
+
+## Read and navigate only
+
+The extension enforces this itself. It does not rely on the agent behaving, because page text is written by strangers and may try to instruct the agent.
+
+- **Clickable:** real links, pagination, `<summary>`, and expanders ("Show 12 more replies", `aria-expanded` toggles). Nothing else gets a click number.
+- **Never clickable:** anything in a form, inputs, editable areas, submit buttons, download links, and non-http links. Short labels that name an action (Reply, Like, Post, Delete, Log out, Subscribe, Add to cart…) and GET links that look like actions (`/logout`, `?action=delete`, CSRF tokens) are also refused.
+- The click policy runs again on the live element at click time. A page that swaps a link for a form button after the read gets refused.
+- Links are followed by the extension (`tabs.update`), not by page scripts, so `target=_blank` can't escape the group.
+- The agent may only act on tabs **in the tsforge group**. It can adopt one of your tabs only when that tab is **active**, or when you clicked the **tsforge toolbar button** on it.
+- Only `http(s)` pages. Private and loopback hosts (routers, intranet, the bridge itself) are blocked unless you set `TSFORGE_BROWSER_ALLOW_PRIVATE=1`.
+- There are no typing, posting or form-filling tools.
+
+Remaining risk: injected text could still ask the agent to *open* a URL that carries something it read. Other tabs are unreadable unless you share them, which limits this, but review what a research session did if the pages were hostile.
+
+## Setup
+
+1. **Build the extension** (from a tsforge checkout):
+
+   ```bash
+   bun run --cwd packages/chrome-extension build
+   ```
+
+2. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked**, and pick `packages/chrome-extension/dist`. The extension ID is fixed, so tsforge recognises it on any machine.
+3. Start tsforge with the bridge on, or flip **Chrome browser** in [`/config`](/cli/interactive/):
+
+   ```bash
+   TSFORGE_BROWSER=1 tsforge
+   ```
+
+   The boot chip reads `browser · waiting for the Chrome extension`.
+4. Run **`/browser`**. It prints the pairing token, which is stored in `~/.tsforge/browser-token`. Paste it into the extension's options page (it opens on install) and save. The chip and `/browser` switch to **connected** within a few seconds.
+
+The extension reconnects by itself whenever tsforge starts, and keeps retrying (with backoff) while tsforge isn't running.
+
+## The tools
+
+| Tool | What it does |
+| --- | --- |
+| `browser_tabs` | list your tabs: which are in the tsforge group, which is active |
+| `browser_adopt` | move your tab (active or shared) into the group |
+| `browser_open` / `browser_navigate` | open a URL in a new group tab / load one (or go back) |
+| `browser_read` | the page as markdown in ~6000-char chunks (`chunk 2/7`), with inline refs like `[12 link: text](url)` and `[13 expand: Show more]` |
+| `browser_click` | click a ref from the last read: follow a link, next page, expand replies |
+| `browser_scroll` | scroll (`down`, `page`, `bottom`) for infinite-scroll pages |
+| `browser_screenshot` | save a PNG for `read_image` (only with a vision backend) |
+| `browser_close` | close a tab tsforge opened; your adopted tabs are only released |
+| `note` | append timestamped notes to `notes/<topic>.md` (append-only) |
+
+`browser_read` picks between an article view and the whole page on its own. It falls back to the whole page when the article extractor would drop most of the text, which is what happens with forum replies.
+
+## One browser, one session
+
+The bridge listens on `127.0.0.1:47823`. Only the first tsforge process gets the port. A second session shows `port 47823 in use` and offers no browser tools. Set `TSFORGE_BROWSER_PORT` (and the same port in the extension options) to run one elsewhere.
+
+| Env var | Default | Effect |
+| --- | --- | --- |
+| `TSFORGE_BROWSER` | off | start the bridge and offer the browser tools (`=1`) |
+| `TSFORGE_BROWSER_PORT` | `47823` | bridge port (1024–65535) |
+| `TSFORGE_BROWSER_ALLOW_PRIVATE` | off | let the browser tools open private/loopback hosts (`=1`) |
+
+The browser tools are classified as `network` by the [policy](/guardrails/policy/). They are allowed while planning (they can't change your workspace) and denied in modes that deny network. `note` counts as a file edit, so it is withheld in plan mode.
+
+→ [Web access](/integrations/web-tools/) · [Environment variables](/reference/flags/) · [Permissions & policy](/guardrails/policy/)

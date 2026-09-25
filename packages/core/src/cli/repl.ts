@@ -10,6 +10,7 @@ import { createInterface } from "node:readline/promises";
 import { emitKeypressEvents } from "node:readline";
 import { formatHelp, takesArg } from "./commands";
 import { resolveInitialPlanMode } from "./plan-default";
+import { workspaceHasCode } from "../gate/workspace-code";
 import { modeById, nextMode } from "./modes";
 import { runConfigMenu } from "./config-menu";
 import { runCapabilityMenu } from "./capability-menu";
@@ -91,6 +92,12 @@ import { isPolicyMode, type PolicyMode } from "../policy";
 import { startEditor, type IEditorHandle } from "../editor";
 import { renderEditor } from "../editor/view";
 import { flags } from "../config/flags";
+import {
+  bridgeTokenPath,
+  readBridgeToken,
+  type BridgeStatus,
+} from "../chrome-bridge";
+import { browserChipText, browserReportText } from "./browser-command";
 import type { OpenAICompatibleProvider } from "../inference";
 import type { IModelEntry } from "../models-config";
 import { loadModelsConfig } from "../models-config";
@@ -1088,6 +1095,13 @@ function announceLinear(on: boolean): void {
 
 /** Generic boot notice for a curated MCP integration (notion/sentry). Module helper
  *  so its branch stays out of `repl`'s cognitive-complexity budget. */
+/** Boot chip for the Chrome research bridge (absent when TSFORGE_BROWSER is off). */
+function announceBrowser(status: BridgeStatus | null): void {
+  if (status !== null) {
+    addBootChip("browser", browserChipText(status, flags.browserPort()));
+  }
+}
+
 function announceIntegration(on: boolean, name: string, detail: string): void {
   if (on) {
     addBootChip(name, `on · ${detail}`);
@@ -1329,7 +1343,8 @@ export async function repl(args: ICliArgs): Promise<number> {
     });
   }
 
-  // Plan mode is the DEFAULT for a fresh interactive session (opt out with
+  // Plan mode is the DEFAULT for a fresh interactive session in a folder with
+  // code (a no-code folder — research, notes — starts in normal mode; opt out with
   // `--no-plan` or an explicit non-plan `--policy-mode`/config `policy.mode`).
   // For a staged web build it pauses after the design phase to review the plan;
   // for EVERYTHING else it is the general read-only mode: the agent explores,
@@ -1339,7 +1354,8 @@ export async function repl(args: ICliArgs): Promise<number> {
   let planMode = resolveInitialPlanMode(
     args,
     resumed?.planMode,
-    session.basePolicyMode
+    session.basePolicyMode,
+    workspaceHasCode(args.dir)
   );
   // True once a plan-mode exchange has happened, so a stray "approve" before any
   // discussion is just a message, not an approval.
@@ -1503,6 +1519,8 @@ export async function repl(args: ICliArgs): Promise<number> {
     linearOn = session.setLinearCapability();
     notionOn = session.setNotionCapability();
     sentryOn = session.setSentryCapability();
+    // After setImageCapabilities: browser_screenshot is offered only with vision.
+    session.setBrowserCapability();
   };
 
   wireImages();
@@ -1510,6 +1528,7 @@ export async function repl(args: ICliArgs): Promise<number> {
   announceLinear(linearOn);
   announceIntegration(notionOn, "notion", "pages + knowledge via MCP");
   announceIntegration(sentryOn, "sentry", "errors + fixes via MCP");
+  announceBrowser(session.browserStatus());
 
   if (imageCaps.vision || imageCaps.imageGen) {
     const on = [
@@ -2315,6 +2334,17 @@ export async function repl(args: ICliArgs): Promise<number> {
         await runMemorySlashCommand(args.dir, session, arg, streamOut);
         break;
 
+      case "browser":
+        streamOut(
+          browserReportText({
+            status: session.browserStatus(),
+            port: flags.browserPort(),
+            tokenPath: bridgeTokenPath(),
+            token: await readBridgeToken(),
+          })
+        );
+        break;
+
       case "remember":
         await runRememberSlashCommand(session, arg, streamOut);
         break;
@@ -2919,7 +2949,10 @@ export async function repl(args: ICliArgs): Promise<number> {
         },
         currentMode: () => modeById(currentModeId).label,
         setMode,
-        getGate: () => gateLabel,
+        getGate: () =>
+          session.gateDormant()
+            ? `${gateLabel} · dormant until the folder has code`
+            : gateLabel,
         setGate: (cmd) => {
           const trimmed = cmd.trim();
 
@@ -2937,6 +2970,7 @@ export async function repl(args: ICliArgs): Promise<number> {
         },
         getEnv: (name) => process.env[name],
         setEnv,
+        enableBrowser: () => session.enableBrowser(),
         view: {
           render: (lines) => {
             chrome.setOverlay(lines);

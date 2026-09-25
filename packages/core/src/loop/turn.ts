@@ -98,6 +98,16 @@ import {
   WEB_FETCH_TOOL,
   WEB_SEARCH_TOOL,
   WEB_BROWSE_TOOL,
+  BROWSER_TABS_TOOL,
+  BROWSER_ADOPT_TOOL,
+  BROWSER_OPEN_TOOL,
+  BROWSER_NAVIGATE_TOOL,
+  BROWSER_READ_TOOL,
+  BROWSER_CLICK_TOOL,
+  BROWSER_SCROLL_TOOL,
+  BROWSER_SCREENSHOT_TOOL,
+  BROWSER_CLOSE_TOOL,
+  NOTE_TOOL,
   PACKAGE_INFO_TOOL,
   PACKAGE_DOCS_TOOL,
   buildPullConventionsTool,
@@ -192,6 +202,16 @@ type AdvertisedTool =
   | typeof WEB_FETCH_TOOL
   | typeof WEB_SEARCH_TOOL
   | typeof WEB_BROWSE_TOOL
+  | typeof BROWSER_TABS_TOOL
+  | typeof BROWSER_ADOPT_TOOL
+  | typeof BROWSER_OPEN_TOOL
+  | typeof BROWSER_NAVIGATE_TOOL
+  | typeof BROWSER_READ_TOOL
+  | typeof BROWSER_CLICK_TOOL
+  | typeof BROWSER_SCROLL_TOOL
+  | typeof BROWSER_SCREENSHOT_TOOL
+  | typeof BROWSER_CLOSE_TOOL
+  | typeof NOTE_TOOL
   | typeof PACKAGE_INFO_TOOL
   | typeof PACKAGE_DOCS_TOOL
   | ReturnType<typeof buildPullConventionsTool>
@@ -241,6 +261,9 @@ export interface ICapabilityFlags {
    *  also hard-check `ctx.notion` / `ctx.sentry`. */
   notion?: boolean;
   sentry?: boolean;
+  /** The Chrome research bridge is listening (TSFORGE_BROWSER, port owned by this
+   *  process). When on, the browser_* tools + `note` are advertised. */
+  browser?: boolean;
 }
 
 /** Free, local web tools (fetch + search) — advertised only under TSFORGE_WEB so
@@ -305,6 +328,32 @@ function sentryTools(caps: ICapabilityFlags): AdvertisedTool[] {
   return caps.sentry === true ? [SENTRY_READ_TOOL, SENTRY_WRITE_TOOL] : [];
 }
 
+/** Chrome research bridge — the user's real browser, read + navigate only.
+ *  Screenshot only with a vision backend (the model views it via read_image). */
+export function browserTools(caps: ICapabilityFlags): AdvertisedTool[] {
+  if (caps.browser !== true) {
+    return [];
+  }
+
+  return [
+    BROWSER_TABS_TOOL,
+    BROWSER_ADOPT_TOOL,
+    BROWSER_OPEN_TOOL,
+    BROWSER_NAVIGATE_TOOL,
+    BROWSER_READ_TOOL,
+    BROWSER_CLICK_TOOL,
+    BROWSER_SCROLL_TOOL,
+    ...(caps.vision === true ? [BROWSER_SCREENSHOT_TOOL] : []),
+    BROWSER_CLOSE_TOOL,
+  ];
+}
+
+/** `note` — append-only research notes. Offered whenever the model can research
+ *  (web or browser tools on). */
+function noteTools(caps: ICapabilityFlags): AdvertisedTool[] {
+  return caps.browser === true || flags.webTools() ? [NOTE_TOOL] : [];
+}
+
 /** Image capability tools — each advertised only when its backend is configured
  *  (caps resolved by the driver). read_image (vision) and generate_image are
  *  independent, so a vision-only or gen-only setup offers just the one. */
@@ -334,6 +383,7 @@ export function toolsFor(
   const sentry = sentryTools(caps);
   const script = scriptTools();
   const image = imageTools(caps);
+  const research = [...browserTools(caps), ...noteTools(caps)];
 
   // check — the callable, structured acceptance gate. Offered ONLY when the caller
   // wires a `runCheck` seam on the tool context (the boringstack build does); a
@@ -401,6 +451,7 @@ export function toolsFor(
       ...sentry,
       ...script,
       ...image,
+      ...research,
     ];
   }
 
@@ -422,6 +473,7 @@ export function toolsFor(
     ...sentry,
     ...script,
     ...image,
+    ...research,
   ];
 }
 
@@ -481,6 +533,9 @@ export interface ILoopCtxTool {
   /** Connected MCP servers (opt-in via tsforge.config.json `mcpServers`). Threaded
    *  into the tool context so `mcp__<server>__<tool>` calls dispatch to them. */
   mcpRegistry?: McpRegistry;
+  /** Chrome research bridge state (TSFORGE_BROWSER). Threaded into the tool
+   *  context so the browser_* handlers route through it. */
+  browser?: IToolContext["browser"];
   /** GitHub capability = consent (gh installed + authenticated). Threaded into the
    *  tool context so the git/GitHub WRITE handlers can hard-check it and fail closed
    *  when off — even on a salvaged/forced call. See {@link IToolContext.github}. */

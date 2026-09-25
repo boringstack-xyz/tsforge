@@ -52,6 +52,9 @@ def boot(wid, work):
 def main():
     ok = True
     work = tempfile.mkdtemp(prefix="tsforge-planmode-")
+    # A project folder: plan-first applies only to folders with code.
+    with open(os.path.join(work, "package.json"), "w") as f:
+        f.write('{"name":"planmode-e2e","private":true}\n')
     target = os.path.join(work, "src", "sum.ts")
 
     with window() as wid:

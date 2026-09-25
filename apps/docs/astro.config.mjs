@@ -204,6 +204,7 @@ export default defineConfig({
             { label: "Notion", link: "/integrations/notion/" },
             { label: "Sentry", link: "/integrations/sentry/" },
             { label: "Web access", link: "/integrations/web-tools/" },
+            { label: "Research in your Chrome", link: "/integrations/chrome/" },
             { label: "Decision memory", link: "/integrations/decision-memory/" },
           ],
         },

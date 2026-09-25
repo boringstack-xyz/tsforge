@@ -30,6 +30,18 @@ You can override anytime:
 
 See [When the gate fails](/loop/validation/) for what happens when the gate fails and how the repair loop stops.
 
+## No code, no gate (yet)
+
+The automatic gate is a strict TypeScript gate, so it only makes sense once there is something to check. In a folder with **no JS/TS project**, such as research notes or an empty directory, the auto gate stays **dormant**. "No project" means no `package.json`, no `tsconfig`, and no `.ts`/`.js` source outside `notes/`, `node_modules/`, `dist/` and similar folders. While the gate is dormant:
+
+- the session works as an assistant: no "drive to a green gate" prompt, no `check` or `pull_conventions` tools, and no gate runs after a turn
+- reading and browsing count as progress, so a long research session isn't told to "stop reading"
+- `task_complete` records checklist items without a gate check
+
+The first time code appears in the folder (the model creates `src/index.ts`, or a scaffold finishes), the gate **wakes up**. It stays on for the rest of the session with the full build behaviour. `/config` shows the gate as "dormant until the folder has code" until then. An explicit gate (`/gate …`, `--accept`) is never dormant.
+
+If nothing matches `.` at all, the ESLint stage passes rather than failing with "all files are ignored".
+
 ## What tsforge looks at first
 
 ```mermaid

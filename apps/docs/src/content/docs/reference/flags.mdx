@@ -74,6 +74,16 @@ Opt-in, free, and no required service keys. Turn on **Web tools** in [`/config`]
 | `TSFORGE_SEARXNG_URL` | unset | route `web_search` to a SearXNG instance you already run (e.g. `http://localhost:8888`) |
 | `TSFORGE_WEB_SEARCH_BACKEND` | auto | `duckduckgo` or `searxng`; `searxng` fails closed if no SearXNG URL is set |
 
+## Chrome bridge
+
+Let the agent read pages in your real, logged-in Chrome through the tsforge extension (read and navigate only). Full guide: [Research in your Chrome](/integrations/chrome/).
+
+| Variable | Default | Toggles |
+| --- | --- | --- |
+| `TSFORGE_BROWSER` | off | start the localhost bridge and offer the `browser_*` tools (`=1`) |
+| `TSFORGE_BROWSER_PORT` | `47823` | bridge port (1024–65535) |
+| `TSFORGE_BROWSER_ALLOW_PRIVATE` | off | let the browser tools open private/loopback hosts (`=1`) |
+
 ## Image capabilities (vision, generation)
 
 When the chat model is text-only, route **reading** and **generating** images to a separate backend. Configure it in [`models.json` `capabilities`](/inference/models-json/#extra-capabilities-vision-image-generation) or the env vars below. Each capability is off unless configured; when on, it enables the `read_image` / `generate_image` tools and the drag / paste / `@` attachment UX ([interactive](/cli/interactive/)). The env trio is an ad-hoc backend without editing the file; a `_MODEL` alone (no `_BASE_URL`) names an existing registry entry.

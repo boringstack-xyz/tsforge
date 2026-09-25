@@ -71,6 +71,10 @@ def _decide(messages):
 def spawn(port, extra_env):
     """Fork tsforge into a real pty pointed at the stub server."""
     work = tempfile.mkdtemp(prefix="tsforge-pty-")
+    # A project folder: plan-first applies to folders with code (a folder with
+    # no code — research notes — starts in normal mode).
+    with open(os.path.join(work, "package.json"), "w") as f:
+        f.write('{"name":"pty-e2e","private":true}\n')
     home = tempfile.mkdtemp(prefix="tsforge-home-")
     pid, master = spawn_tsforge(port, extra_env, cwd=work, home=home)
     return pid, master, work

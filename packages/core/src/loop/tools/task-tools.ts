@@ -196,21 +196,46 @@ export async function doTaskComplete(
     );
   }
 
-  if (ctx.runTaskGate === undefined) {
-    return reject(
-      ctx,
-      "task_complete",
-      "no gate wired — cannot mark an item done without validation"
-    );
+  // No live gate (a research/notes session, or an auto gate still waiting for
+  // code): there is nothing to validate against, and refusing forever strands
+  // the plan. Complete it and say it wasn't gate-checked.
+  const unvalidated = ctx.runTaskGate === undefined;
+  const gateError =
+    ctx.runTaskGate === undefined
+      ? null
+      : await taskGateError(ctx, ctx.runTaskGate);
+
+  if (gateError !== null) {
+    return reject(ctx, "task_complete", gateError);
   }
 
+  const result = completeItemInPlan(plan, id);
+
+  if (!result.ok) {
+    return reject(ctx, "task_complete", result.error);
+  }
+
+  const item = findItem(result.plan.items, id);
+
+  persistAndNotify(ctx, result.plan, "task_complete", item?.title ?? id);
+
+  return unvalidated
+    ? `completed: ${item?.title ?? id} (no gate in this session — not gate-checked)`
+    : `completed: ${item?.title ?? id}`;
+}
+
+/** Run the gate before marking an item done; the rejection text when it is red. */
+async function taskGateError(
+  ctx: IToolContext,
+  runTaskGate: NonNullable<IToolContext["runTaskGate"]>
+): Promise<string | null> {
   ctx.report({
     kind: "tool",
     task: ctx.task,
     message: "gate · checking before done",
   });
 
-  const gate = await ctx.runTaskGate();
+  const gate = await runTaskGate();
 
   if (!gate.passed) {
     const sample = gate.errors
@@ -224,24 +249,10 @@ export async function doTaskComplete(
     const identity = formatGateIdentity(gate.command, gate.packs);
     const first = sample.length > 0 ? ` First: ${sample}${more}` : "";
 
-    return reject(
-      ctx,
-      "task_complete",
-      `gate RED (${String(gate.errors.length)} error(s)) — item stays open. Fix, then task_complete again.${first}\n${identity}`
-    );
+    return `gate RED (${String(gate.errors.length)} error(s)) — item stays open. Fix, then task_complete again.${first}\n${identity}`;
   }
 
-  const result = completeItemInPlan(plan, id);
-
-  if (!result.ok) {
-    return reject(ctx, "task_complete", result.error);
-  }
-
-  const item = findItem(result.plan.items, id);
-
-  persistAndNotify(ctx, result.plan, "task_complete", item?.title ?? id);
-
-  return `completed: ${item?.title ?? id}`;
+  return null;
 }
 
 /** Re-open a done item. */

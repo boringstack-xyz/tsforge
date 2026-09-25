@@ -1,4 +1,5 @@
 import { FLAG_ON, ENV_FLAG } from "./config.constants";
+import { DEFAULT_BRIDGE_PORT } from "../chrome-bridge/chrome-bridge.constants";
 
 /**
  * The ONLY module that reads `process.env` for runtime flags. Read LIVE (on each
@@ -24,6 +25,21 @@ export const flags = {
    *  web_fetch extracts locally; web_search uses DuckDuckGo (or a self-hosted
    *  SearXNG via TSFORGE_SEARXNG_URL). */
   webTools: (): boolean => isOn(ENV_FLAG.webTools),
+  /** Chrome research bridge — opt-in (default OFF). Starts the localhost bridge
+   *  the tsforge extension connects to and advertises the browser_* tools. */
+  browser: (): boolean => isOn(ENV_FLAG.browser),
+  /** Bridge port (1024–65535); anything else falls back to the default. */
+  browserPort: (): number => {
+    const n = Number(process.env[ENV_FLAG.browserPort]);
+
+    return Number.isInteger(n) && n >= 1024 && n <= 65_535
+      ? n
+      : DEFAULT_BRIDGE_PORT;
+  },
+  /** Let the browser tools open private / loopback hosts (intranet research).
+   *  Off by default so injected page text can't aim the logged-in browser at a
+   *  router, an internal service, or the bridge itself. */
+  browserAllowPrivate: (): boolean => isOn(ENV_FLAG.browserAllowPrivate),
   /** Programmatic Tool Calling: advertise the `script` tool. ON by default — it
    *  measurably speeds up read-dependent multi-file work (codemods) and is a no-op
    *  on simple tasks; withhold with TSFORGE_NO_SCRIPT (the A/B / kill switch). It

@@ -49,6 +49,7 @@ const COMMAND_TO_GROUP: Readonly<Record<string, string>> = {
   "/files": STEER_THE_SESSION,
   "/model": STEER_THE_SESSION,
   "/config": STEER_THE_SESSION,
+  "/browser": STEER_THE_SESSION,
   "/setup": STEER_THE_SESSION,
   "/sessions": SESSION_AND_COST,
   "/compact": SESSION_AND_COST,

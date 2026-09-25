@@ -78,7 +78,7 @@ describe("drive-to-green system prompt (the build path's expert-TS contract)", (
     await withSystem({ executionMode: "chat" }, async (_s, system) => {
       const s = system();
 
-      expect(s).toContain("NOT every request is about that repository");
+      expect(s).toContain("NOT every request is about code");
       expect(s).not.toContain("driving ONE task to a GREEN gate");
     });
   });

@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { IProvider } from "../src/inference";
@@ -95,6 +95,10 @@ test("setGate wins a race against an in-flight autoGate re-resolution (Phaser bu
   const dir = await mkdtemp(join(tmpdir(), "tsforge-session-gate-race-"));
 
   try {
+    // A build session: the folder has a project, so the auto gate is live (an
+    // auto gate in a folder with no code stays dormant and never resolves).
+    await writeFile(join(dir, "package.json"), "{}");
+
     let releaseAutoGate: () => void = () => undefined;
     const released = new Promise<void>((res) => {
       releaseAutoGate = res;

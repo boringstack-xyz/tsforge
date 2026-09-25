@@ -4,6 +4,7 @@ import type { TsService } from "../../lsp";
 import type { Reporter } from "../loop.types";
 import type { SessionSnapshotStore } from "../../files/hashline";
 import type { McpRegistry } from "../../mcp";
+import type { IBrowserSession } from "../../chrome-bridge/chrome-bridge.types";
 import type { PolicyMode, IPolicyRules } from "../../policy";
 import type { IValidateResult } from "../../validate/validate.types";
 import type { IConventionProvider } from "../conventions-provider";
@@ -185,6 +186,9 @@ export interface IToolContext {
    *  here. These are external context/tool sources — they never touch the editable
    *  scope or the deterministic gate. Absent ⇒ no MCP configured. */
   mcpRegistry?: McpRegistry;
+  /** The Chrome research bridge (TSFORGE_BROWSER). Present ⇒ the browser_* tools
+   *  route through it; absent ⇒ they report the feature is off. */
+  browser?: IBrowserSession;
   /** Run one read-only specialist subagent for the `spawn_agent` tool. Wired by
    *  the interactive CLI (headless one-shot leaves it absent). See {@link SpawnAgentFn}. */
   spawnAgent?: SpawnAgentFn;

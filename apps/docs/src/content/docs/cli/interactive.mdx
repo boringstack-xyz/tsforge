@@ -16,7 +16,7 @@ Most users run `tsforge` and stay in the interactive session.
 | **Interactive** | `tsforge`                                   | default: open-ended tasks, steering, exploration                                                                                 |
 | **One-shot**    | `tsforge "task" --accept "gate cmd"`        | drive a single task to green and exit                                                                                            |
 | **New app**     | `tsforge scaffold`                          | stand up [BoringStack](/scaffold/boringstack/), its Astro site, or a [Phaser](/scaffold/phaser/) game, then build with the [greenfield loop](/loop/greenfield/) |
-| **Plan mode**   | default: **Shift+Tab** or `/plan` to switch | read-only explore → approve saves a project checklist → implement in-session. See [Plan mode](/cli/plan-mode/).                  |
+| **Plan mode**   | default in a folder with code (a no-code folder, e.g. research notes, starts in normal mode): **Shift+Tab** or `/plan` to switch | read-only explore → approve saves a project checklist → implement in-session. See [Plan mode](/cli/plan-mode/).                  |
 
 ## Flags
 
@@ -27,7 +27,7 @@ Most users run `tsforge` and stay in the interactive session.
 | `--accept` / `--gate <cmd>` | gate command for one-shot mode                                                                                                                                                               |
 | `--no-gate`                 | skip auto gate detection                                                                                                                                                                     |
 | `--browser <html>`          | append headless render check to gate                                                                                                                                                         |
-| `--plan`                    | force plan mode on for an interactive session. Plan is the default anyway, so this only matters to override a repo that configured an autonomous `policy.mode`; ignored by one-shot/headless |
+| `--plan`                    | force plan mode on for an interactive session. Plan is the default in folders with code, so this matters in a no-code folder or to override a repo that configured an autonomous `policy.mode`; ignored by one-shot/headless |
 | `--continue` / `-c`         | resume latest saved session for this dir (restores `activePlanId`; Tasks rail reloads that plan)                                                                                             |
 | `--resume <id>`             | resume a specific session                                                                                                                                                                    |
 | `--log`                     | append JSONL event stream to `~/.tsforge/logs/`                                                                                                                                              |
@@ -40,7 +40,7 @@ Model endpoint overrides: `TSFORGE_BASE_URL`, `TSFORGE_MODEL`. See [Environment 
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `/help`                 | list commands                                                                                                            |
 | `/scaffold`             | create a new project here (BoringStack / Astro / Phaser) via the wizard                                                |
-| `/plan`                 | toggle plan mode (on by default; approve saves the checklist and implements)                                             |
+| `/plan`                 | toggle plan mode (on by default in folders with code; approve saves the checklist and implements)                                             |
 | `/config`               | settings hub: model (switch/add), mode, gate, editable scope, and tools (web, TDD); each with a description + live value |
 | `/gate <cmd>`           | set gate command (`/gate` alone clears)                                                                                  |
 | `/files <globs>`        | set editable scope                                                                                                       |
@@ -54,6 +54,7 @@ Model endpoint overrides: `TSFORGE_BASE_URL`, `TSFORGE_MODEL`. See [Environment 
 | `/clear`                | reset conversation (keeps workspace + gate)                                                                              |
 | `/cost`                 | rough token estimate                                                                                                     |
 | `/metrics`              | token totals + generation rate (tok/s) this session                                                                      |
+| `/browser`              | Chrome research bridge: status, pairing token, setup steps ([guide](/integrations/chrome/))                              |
 | `/memory`               | show coding lessons + project decisions (`/memory forget` clears them)                                                   |
 | `/exit`                 | quit (`/quit` is an alias)                                                                                               |
 

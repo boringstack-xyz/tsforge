@@ -6,7 +6,7 @@
   "description": "TypeScript coding harness with a deterministic gate, stack-aware guardrails, and stream-level correction.",
   "scripts": {
     "tsforge": "bun --cwd packages/core ./src/cli.ts",
-    "typecheck": "bun packages/core/scripts/tsc7.ts -p packages/core/tsconfig.json",
+    "typecheck": "bun packages/core/scripts/tsc7.ts -p packages/core/tsconfig.json && bun packages/core/scripts/tsc7.ts -p packages/chrome-extension/tsconfig.json",
     "lint": "eslint packages",
     "lint:fix": "eslint packages --fix",
     "format": "prettier --write \"packages/**/*.ts\"",

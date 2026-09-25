@@ -80,6 +80,9 @@ export interface IConfigDeps {
    *  effect for subsequent turns this session). */
   readonly getEnv: (name: string) => string | undefined;
   readonly setEnv: (name: string, value: string | undefined) => void;
+  /** Start the Chrome research bridge now and advertise the browser tools
+   *  (the `tools.browser` toggle). Absent ⇒ the toggle only flips the env flag. */
+  readonly enableBrowser?: () => Promise<unknown>;
   /** The inline menu view (pane overlay + close). */
   readonly view?: IConfigMenuView;
   /** Overlay width. Prefer main-pane inner cols when the pane console is live. */
@@ -152,6 +155,7 @@ export function nextModelName(cfg: IModelsConfig, current: string): string {
 const ENV = {
   web: "TSFORGE_WEB",
   tdd: "TSFORGE_TDD",
+  browser: "TSFORGE_BROWSER",
 };
 
 function onOff(on: boolean): string {
@@ -256,6 +260,23 @@ export function buildSettings(deps: IConfigDeps): ISetting[] {
         const on = deps.getEnv(ENV.web) === "1";
 
         deps.setEnv(ENV.web, on ? undefined : "1");
+      },
+    },
+    {
+      id: "tools.browser",
+      group: "Tools",
+      label: "Chrome browser",
+      describe:
+        "Let the agent read pages in your real, logged-in Chrome via the tsforge extension (read + navigate only). /browser shows pairing steps. Turning it off applies to the next session.",
+      read: () => onOff(deps.getEnv(ENV.browser) === "1"),
+      activate: () => {
+        const on = deps.getEnv(ENV.browser) === "1";
+
+        deps.setEnv(ENV.browser, on ? undefined : "1");
+
+        if (!on) {
+          void deps.enableBrowser?.();
+        }
       },
     },
     {

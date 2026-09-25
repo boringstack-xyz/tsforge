@@ -984,15 +984,26 @@ test("a plain prose answer (no markup, no dump) still ends as responded", async 
 
 // TDD is ON by default, but the interactive system prompt never carried the
 // test-first guidance (only the headless build prompt did) — so the CLI agent was
-// never told to write tests first. It must now appear in the seeded system message.
-test("interactive system prompt includes test-first guidance when TDD is on", async () => {
+// never told to write tests first. It must appear in an interactive BUILD session
+// (a live gate) — and not in a plain assistant/research session, where "write
+// the test first" is noise.
+test("interactive build prompt includes test-first guidance when TDD is on", async () => {
   const dir = await mkdtemp(join(tmpdir(), "tsforge-session-"));
 
   try {
-    const session = await Session.create({ provider: yields(), cwd: dir });
+    const build = await Session.create({
+      provider: yields(),
+      cwd: dir,
+      accept: "true",
+      executionMode: "drive-to-green",
+    });
 
-    expect(session.messages[0]?.role).toBe("system");
-    expect(session.messages[0]?.content).toContain("TEST-FIRST (TDD)");
+    expect(build.messages[0]?.role).toBe("system");
+    expect(build.messages[0]?.content).toContain("TEST-FIRST (TDD)");
+
+    const chat = await Session.create({ provider: yields(), cwd: dir });
+
+    expect(chat.messages[0]?.content).not.toContain("TEST-FIRST (TDD)");
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

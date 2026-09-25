@@ -164,7 +164,7 @@ describe("checklist-store", () => {
     );
   });
 
-  test("task_complete refuses when no gate is wired", async () => {
+  test("task_complete without a gate completes the item, marked unvalidated", async () => {
     const plan = samplePlan("nogate");
 
     savePlan(dir, plan);
@@ -179,9 +179,12 @@ describe("checklist-store", () => {
 
     const out = await doTaskComplete({ id: "child-a" }, ctx);
 
+    // No gate (a research/notes session, or an auto gate waiting for code):
+    // nothing to validate against, so refusing forever just strands the plan.
+    expect(out).toContain("completed: Child A");
     expect(out).toMatch(/no gate/i);
     expect(loadPlan(dir, "nogate")?.items[0]?.children?.[0]?.status).toBe(
-      "pending"
+      "done"
     );
   });
 
