@@ -70,6 +70,10 @@ Research sessions are meant to run for hours, so a single model hiccup doesn't e
 - **Repetition loops.** The retry is forced to make a tool call, at a higher temperature, and the repeated lines are removed from the history first. The loop budget counts only *consecutive* loops and starts over whenever a tool call succeeds. If three loops in a row get through, the context is compacted and tried once more before the session stops.
 - **"Let me record it." with no tool call.** When there's no gate, a reply that announces its next step without taking it gets a nudge to make the call. It is not treated as the final answer.
 - **Compaction.** The summary request is bounded. If it still fails, your requests are kept verbatim and the older tool output is dropped, so the context always shrinks.
+- **No turn cap.** Without a live gate a single message can run for days. Gated builds keep the 1000-turn backstop. `TSFORGE_MAX_TURNS` sets a cap anyway, or `0` for unlimited everywhere.
+- **Saved as it goes.** The session is saved every 40 turns, not only when a message finishes, so `--continue` picks up close to where a crash or reboot stopped it.
+- **Data files.** `append` adds records to a data file (`.jsonl`, CSV, logs) without an edit anchor. JSONL lines are checked, so a malformed record never gets written. Code and config files are refused.
+- **No TypeScript rules on prose.** The streaming TypeScript rules (like "no `as` cast") stay off until the workspace has code.
 
 ## Site plugins
 

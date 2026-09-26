@@ -56,6 +56,7 @@ import {
   BROWSER_MARKER,
   BROWSER_RESEARCH_GUIDANCE,
   NOTE_TOOL,
+  APPEND_TOOL,
 } from "../agent";
 import { openBrowserSession, type BridgeStatus } from "../chrome-bridge";
 import type { IAgentSpec } from "../agent/agent-spec";
@@ -2194,6 +2195,28 @@ export class Session {
     this.ctx.gate.expertRescueTarget = file.length > 0 ? file : undefined;
   }
 
+  /**
+   * The per-send turn cap, re-evaluated every turn. An explicit cap wins (a
+   * scaffold_web budget, TSFORGE_MAX_TURNS, or the config's maxTurns). Otherwise
+   * a session with a LIVE gate — or a read-only plan session, which has no other
+   * stop — keeps the runaway backstop; a no-gate session (research, notes, chat)
+   * runs uncapped, because a research run has no natural end and the backstop
+   * was ending multi-day runs at ~9 hours. The real guards (repetition loops,
+   * timeouts, read-only spin) still stop a session that stops making progress.
+   */
+  turnCap(): number {
+    const explicit =
+      this.maxTurnsOverride ?? flags.maxTurns() ?? this.cfg.maxTurns;
+
+    if (explicit !== undefined) {
+      return explicit;
+    }
+
+    return this.hasGate || this.planMode || this.ctx.tool.readOnly === true
+      ? LOOP_LIMITS.runawayBackstopTurns
+      : Number.POSITIVE_INFINITY;
+  }
+
   /** Raise/lower the per-send turn cap mid-session — `scaffold_web` flips a chat
    *  session into a from-scratch web build, whose heavy gate needs the bigger
    *  webMaxTurns budget (0/undefined restores the config default). */
@@ -2791,6 +2814,7 @@ export class Session {
     this.addIntegrationTools([
       ...browserTools({ browser: true, vision }),
       NOTE_TOOL,
+      APPEND_TOOL,
     ]);
     this.guideOnce(BROWSER_MARKER, BROWSER_RESEARCH_GUIDANCE);
 
@@ -2895,10 +2919,8 @@ export class Session {
     const { ctx, report } = this;
     // Runaway crash-guard (not the primary stop — the progress guards pull out when
     // converging stops). The PRIMARY terminal is ladder-exhaustion (R5 handoff).
-    const maxTurns =
-      this.maxTurnsOverride ??
-      this.cfg.maxTurns ??
-      LOOP_LIMITS.runawayBackstopTurns;
+    // Re-read every turn: an auto gate can wake mid-send, and that changes it.
+    const turnCap = (): number => this.turnCap();
 
     const checkpointIntervalTurns =
       this.cfg.checkpointIntervalTurns ?? LOOP_LIMITS.checkpointIntervalTurns;
@@ -2938,7 +2960,7 @@ export class Session {
       }
 
       return await this.drive(
-        maxTurns,
+        turnCap,
         checkpointIntervalTurns,
         sendStart,
         opts
@@ -3692,7 +3714,7 @@ export class Session {
     // guarantee that already rejects a mutating call at dispatch). "Only
     // reading" is the CORRECT, expected behavior there, not a stuck signal —
     // pin the streak at 0 rather than escalating a session that structurally
-    // cannot do anything else. The per-send `maxTurns` backstop still bounds
+    // cannot do anything else. The per-send turn cap (turnCap) still bounds
     // a genuinely runaway read-only-mode session.
     const readonlyStreak =
       this.ctx.tool.readOnly === true
@@ -4061,7 +4083,7 @@ export class Session {
    *  failure→fix lessons (best-effort, never affects the result). The buffer is
    *  reset per send so each maps to one "run". */
   private async drive(
-    maxTurns: number,
+    turnCap: () => number,
     checkpointIntervalTurns: number,
     sendStart: number,
     opts: ISendOptions
@@ -4070,7 +4092,7 @@ export class Session {
 
     try {
       const result = await this.driveInner(
-        maxTurns,
+        turnCap,
         checkpointIntervalTurns,
         sendStart,
         opts
@@ -4249,10 +4271,15 @@ export class Session {
     }
   }
 
-  /** The `ttsrManager` completion option, or nothing when TTSR is off. */
+  /** The `ttsrManager` completion option, or nothing when TTSR is off. Also
+   *  off while build mode is suppressed (no code yet / gate cleared): its rules
+   *  are TypeScript rules — "no `as` cast" fired on prose about guitar wiring
+   *  three times in one research run, interrupting the model for nothing. */
   private ttsrCallOption():
     { ttsrManager: TtsrManager } | Record<string, never> {
-    return this.ttsrManager === null ? {} : { ttsrManager: this.ttsrManager };
+    return this.ttsrManager === null || this.buildModeSuppressed()
+      ? {}
+      : { ttsrManager: this.ttsrManager };
   }
 
   /** Apply a mid-stream TTSR fire (inject guidance, retry). Returns true when it
@@ -4494,7 +4521,7 @@ export class Session {
   }
 
   private async driveInner(
-    maxTurns: number,
+    turnCap: () => number,
     checkpointIntervalTurns: number,
     sendStart: number,
     opts: ISendOptions
@@ -4558,7 +4585,9 @@ export class Session {
     this.state.nearGreenSpikeGap = undefined;
     this.state.nearGreenRotation = undefined;
 
-    for (let turn = 1; turn <= maxTurns; turn += 1) {
+    let turn = 1;
+
+    for (; turn <= turnCap(); turn += 1) {
       this.driveTurn = turn;
       const turnStart = performance.now();
 
@@ -4717,13 +4746,13 @@ export class Session {
     report({
       kind: "stuck",
       task: SESSION_ID,
-      cycles: maxTurns,
-      message: `stuck (hit the ${maxTurns}-turn runaway crash-guard — progress guards never tripped, which is anomalous; re-steer or narrow the task)`,
+      cycles: turn - 1,
+      message: `stuck (hit the ${String(turn - 1)}-turn runaway crash-guard — progress guards never tripped, which is anomalous; re-steer or narrow the task)`,
     });
 
     return {
       status: "stuck",
-      turns: maxTurns,
+      turns: turn - 1,
     };
   }
 }

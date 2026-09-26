@@ -77,6 +77,11 @@ export const REDDIT_THREAD_TOOL: ISiteToolSchema = {
           description:
             "comment budget incl. expanded replies, default 500, max 2000",
         },
+        force: {
+          type: "boolean",
+          description:
+            "re-read a thread already logged for this topic (normally it is skipped)",
+        },
       },
       required: ["post", "topic"],
     },
@@ -135,9 +140,31 @@ export const REDDIT_SUBREDDITS_TOOL: ISiteToolSchema = {
   },
 };
 
+export const REDDIT_MARK_READ_TOOL: ISiteToolSchema = {
+  type: "function",
+  function: {
+    name: TOOL_NAME.redditMarkRead,
+    description:
+      "Record threads you already covered some other way (an earlier crawl, a URL list you processed) in notes/<topic>/sources.md, so reddit_search flags them 'already read' and reddit_thread skips them. Call it once when resuming older research.",
+    parameters: {
+      type: "object",
+      properties: {
+        topic: TOPIC_ARG,
+        posts: {
+          type: "array",
+          items: { type: "string" },
+          description: "post ids or Reddit post URLs (up to 500 per call)",
+        },
+      },
+      required: ["topic", "posts"],
+    },
+  },
+};
+
 export const REDDIT_TOOLS: readonly ISiteToolSchema[] = [
   REDDIT_SUBREDDITS_TOOL,
   REDDIT_SEARCH_TOOL,
   REDDIT_LISTING_TOOL,
   REDDIT_THREAD_TOOL,
+  REDDIT_MARK_READ_TOOL,
 ];

@@ -148,6 +148,7 @@ import {
   spinner,
   outputRouter,
   makeReporter,
+  withCheckpointHook,
   resolveLogPath,
   observeEvents,
 } from "./logging";
@@ -781,6 +782,8 @@ async function initReplSession(args: ICliArgs): Promise<{
   gateLabel: string;
   logFile: string;
   report: Reporter;
+  /** Bind what runs on each checkpoint event (the REPL saves the session). */
+  setCheckpointHandler: (fn: () => void) => void;
   resumed: ISessionRecord | null;
   files: string[];
   activeModelEntry: IModelEntry;
@@ -861,7 +864,12 @@ async function initReplSession(args: ICliArgs): Promise<{
     envNumber("TSFORGE_CONTEXT_WINDOW") ??
     (await detectContextWindow(provider.config)) ??
     32_768;
-  const report = makeReporter(logFile, id, id);
+  // Checkpoints (every N turns of a long send) save the session; the hook is
+  // bound once `persist` exists below.
+  let onCheckpoint = (): void => undefined;
+  const report = withCheckpointHook(makeReporter(logFile, id, id), () => {
+    onCheckpoint();
+  });
   const profile = resolveCliProfile(args.profile);
   const gatedBuild = autoGate !== undefined || accept.length > 0;
   const config = {
@@ -941,6 +949,9 @@ async function initReplSession(args: ICliArgs): Promise<{
     gateLabel,
     logFile,
     report,
+    setCheckpointHandler: (fn) => {
+      onCheckpoint = fn;
+    },
     resumed,
     files,
     activeModelEntry: activeModel.entry,
@@ -1163,6 +1174,7 @@ export async function repl(args: ICliArgs): Promise<number> {
     gateLabel: initialGateLabel,
     logFile,
     report,
+    setCheckpointHandler,
     resumed,
     activeModelEntry,
     autoGate,
@@ -1278,6 +1290,11 @@ export async function repl(args: ICliArgs): Promise<number> {
       void persistNow();
     }, PERSIST_DEBOUNCE_MS);
   };
+
+  // A long send checkpoints every N turns; save then, not only when it ends.
+  setCheckpointHandler(() => {
+    void persist();
+  });
 
   // "update available" notice: read from the local cache (no network on the hot
   // path) and refresh it in the background for next time. Gated to interactive,
@@ -2060,7 +2077,7 @@ export async function repl(args: ICliArgs): Promise<number> {
       files: session.scope,
       accept: rebound.accept,
       contextWindow,
-      report: makeReporter(logFile, id, id),
+      report,
       enableThinking: false,
       // Keep ask_user (WS-C) offered after /clear when a human is present — but gated
       // on the TTY like the init session, so a piped REPL doesn't advertise a pause

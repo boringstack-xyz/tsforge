@@ -31,11 +31,13 @@ notes/guitar-wiring-issues/
   assets/<post-id>/1.jpg …   images from posts and comments
 ```
 
-`sources.md` also stops duplicate reads: a run that lasts days restarts many times and never re-reads a thread it already logged.
+`sources.md` also stops duplicate reads. `reddit_thread` refuses a thread already logged for the topic (pass `force: true` to read it again) and `reddit_search` marks it `already read`, so a run that lasts days and restarts many times never processes a thread twice.
+
+Resuming research you began another way, like an earlier crawl or a URL list? Have the agent call `reddit_mark_read` with the threads it has already covered, and they're skipped from then on.
 
 ## Images
 
-When a thread is read, its images are downloaded: the post's image or gallery (in order), and images linked or embedded in comments (`i.redd.it`, `preview.redd.it`, `external-preview.redd.it`, `i.imgur.com`). The limit is 30 per thread and 10 MB each. They appear inline in what the agent reads, for example `[image 3: notes/…/assets/abc123/3.jpg — comment by u/someone]`.
+When a thread is read, its images are downloaded: the post's image or gallery (in order), and images linked or embedded in comments (`i.redd.it`, `preview.redd.it`, `external-preview.redd.it`, `i.imgur.com`). Up to 20 post images and 10 comment images per thread are saved, 10 MB each at most, using Reddit's 1080px rendition when it has one. That's about a fifth of the size of the originals and still sharp enough for a wiring photo. Images past the caps stay as links. They appear inline in what the agent reads, for example `[image 3: notes/…/assets/abc123/3.jpg — comment by u/someone]`.
 
 The agent looks at an image with `read_image` (your vision model) only when it carries the insight, such as a wiring diagram or a photo of the problem. Video (`v.redd.it`) is linked, never downloaded.
 
@@ -46,7 +48,10 @@ The agent looks at an image with `read_image` (your vision model) only when it c
 | `reddit_subreddits` | Finds communities for a domain: name, members, description. |
 | `reddit_search` | Searches site-wide or inside one subreddit. Returns one line per post, with `after` for the next page. |
 | `reddit_listing` | Browses a subreddit: hot, new, top or rising. |
-| `reddit_thread` | Reads a whole thread in chunks, saves its images, and logs it in `sources.md`. |
+| `reddit_thread` | Reads a whole thread in chunks, saves its images, and logs it in `sources.md`. Refuses threads already logged unless `force: true`. |
+| `reddit_mark_read` | Logs threads already covered another way, so they're skipped. |
+
+For structured datasets (one JSON record per thread, CSV rows), the agent uses `append`, which adds lines to a data file without an edit anchor.
 
 ## Safety and limits
 

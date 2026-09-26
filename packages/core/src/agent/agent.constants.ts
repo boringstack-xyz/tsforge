@@ -56,7 +56,9 @@ export const TOOL_NAME = {
   redditThread: "reddit_thread",
   redditListing: "reddit_listing",
   redditSubreddits: "reddit_subreddits",
+  redditMarkRead: "reddit_mark_read",
   note: "note",
+  append: "append",
   script: "script",
   spawnAgent: "spawn_agent",
   readImage: "read_image",
@@ -161,9 +163,11 @@ export const TOOL_SPECS: Readonly<Record<ToolName, IToolSpec>> = {
   [TOOL_NAME.redditThread]: { readOnly: true, scriptExposable: false },
   [TOOL_NAME.redditListing]: { readOnly: true, scriptExposable: false },
   [TOOL_NAME.redditSubreddits]: { readOnly: true, scriptExposable: false },
+  [TOOL_NAME.redditMarkRead]: { readOnly: false, scriptExposable: false },
   // `note` appends to ./notes/<topic>.md — a disk write (withheld in plan mode),
   // but outside the code scope/write-guard: notes are research output, not code.
   [TOOL_NAME.note]: { readOnly: false, scriptExposable: false },
+  [TOOL_NAME.append]: { readOnly: false, scriptExposable: false },
   // `script` mutates (it can call edit/create) and must never call itself.
   [TOOL_NAME.script]: { readOnly: false, scriptExposable: false },
   // Delegation is itself read-only (the orchestrator only receives findings;
@@ -610,6 +614,30 @@ export const NOTE_TOOL = {
         },
       },
       required: ["topic", "text"],
+    },
+  },
+};
+
+export const APPEND_TOOL = {
+  type: "function",
+  function: {
+    name: TOOL_NAME.append,
+    description:
+      "Append lines to the END of a data file in the workspace (a .jsonl record, a CSV row, a log line) — no anchor, no rewrite. Creates the file if missing. For .jsonl every line must be valid JSON or nothing is written. Not for code or config: use edit/create for those.",
+    parameters: {
+      type: "object",
+      properties: {
+        file: {
+          type: "string",
+          description: "workspace-relative path, e.g. 'data/results.jsonl'",
+        },
+        text: {
+          type: "string",
+          description:
+            "the line(s) to append; a trailing newline is added if missing",
+        },
+      },
+      required: ["file", "text"],
     },
   },
 };
