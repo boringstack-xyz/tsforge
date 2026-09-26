@@ -29,14 +29,47 @@ function hostOf(url: string): string {
   }
 }
 
-/** Full-size URL of one `media_metadata` entry (animated → its gif/mp4 still). */
+/** Images are saved at most this wide. Reddit's originals run ~1 MB each
+ *  (1.3 GB over one long crawl); its 1080px previews are ~5× smaller and just
+ *  as readable for a wiring photo or a diagram. */
+export const MAX_IMAGE_WIDTH = 1080;
+
+/** The widest rendition no wider than MAX_IMAGE_WIDTH, or null. Galleries
+ *  list them as `{ u, x }`, post previews as `{ url, width }`. */
+function bestRendition(
+  list: unknown,
+  urlKey: "u" | "url",
+  widthKey: "x" | "width"
+): string | null {
+  let best: { url: string; width: number } | null = null;
+
+  for (const r of isArray(list) ? list : []) {
+    const url = isRecord(r) ? str(r, urlKey) : "";
+    const width = isRecord(r) ? r[widthKey] : undefined;
+
+    if (
+      url.length > 0 &&
+      typeof width === "number" &&
+      width <= MAX_IMAGE_WIDTH &&
+      (best === null || width > best.width)
+    ) {
+      best = { url, width };
+    }
+  }
+
+  return best?.url ?? null;
+}
+
+/** URL of one `media_metadata` entry: its ≤1080px preview when Reddit made
+ *  one, else the full-size image (animated → its gif). */
 function metadataUrl(entry: unknown): string | null {
   if (!isRecord(entry) || entry.status !== "valid" || !isRecord(entry.s)) {
     return null;
   }
 
   const still = str(entry.s, "u");
-  const url = still.length > 0 ? still : str(entry.s, "gif");
+  const full = still.length > 0 ? still : str(entry.s, "gif");
+  const url = bestRendition(entry.p, "u", "x") ?? full;
 
   return url.length > 0 ? url : null;
 }
@@ -56,14 +89,22 @@ function galleryImages(d: Obj): string[] {
   });
 }
 
+/** The post's preview image: the ≤1080px rendition, else the full source. */
 function previewImage(d: Obj): string | null {
   const images =
     isRecord(d.preview) && isArray(d.preview.images) ? d.preview.images : [];
   const first = images[0];
-  const source =
-    isRecord(first) && isRecord(first.source) ? str(first.source, "url") : "";
 
-  return source.length > 0 ? source : null;
+  if (!isRecord(first)) {
+    return null;
+  }
+
+  const source = isRecord(first.source) ? str(first.source, "url") : "";
+
+  return (
+    bestRendition(first.resolutions, "url", "width") ??
+    (source.length > 0 ? source : null)
+  );
 }
 
 export function postImages(d: Obj): string[] {
@@ -72,14 +113,20 @@ export function postImages(d: Obj): string[] {
   }
 
   const url = str(d, "url");
+  const direct = DIRECT_IMAGE_HOSTS.has(hostOf(url)) && IMAGE_EXT_RE.test(url);
 
-  if (DIRECT_IMAGE_HOSTS.has(hostOf(url)) && IMAGE_EXT_RE.test(url)) {
-    return [url];
+  if (!direct && str(d, "post_hint") !== "image") {
+    return [];
   }
 
-  const preview = str(d, "post_hint") === "image" ? previewImage(d) : null;
+  // An image post's preview is the same picture at ≤1080px — prefer it.
+  const preview = previewImage(d);
 
-  return preview === null ? [] : [preview];
+  if (preview !== null) {
+    return [preview];
+  }
+
+  return direct ? [url] : [];
 }
 
 export function postVideo(d: Obj): string | null {

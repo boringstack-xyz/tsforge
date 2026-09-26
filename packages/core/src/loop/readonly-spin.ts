@@ -28,6 +28,7 @@ export const WRITE_ATTEMPT_TOOLS: ReadonlySet<string> = new Set([
   // A research session reads for many turns by design; saving notes is its
   // "write". Without this a long thread read trips the re-steer mid-page.
   TOOL_NAME.note,
+  TOOL_NAME.append,
 ]);
 
 /** Offered after a readonly re-steer — model cannot pick survey reads again.
@@ -39,6 +40,7 @@ export const WRITE_FORCE_TOOL_NAMES: ReadonlySet<string> = new Set([
   TOOL_NAME.editLines,
   TOOL_NAME.check,
   TOOL_NAME.note,
+  TOOL_NAME.append,
 ]);
 
 /** Research tools: fetching, searching, and reading pages (the web tools and

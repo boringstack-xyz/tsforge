@@ -547,6 +547,11 @@ const SPECIAL_TOOLS = new Set<string>([
   // `note` appends research notes to notes/<topic>.md — not gated source, no
   // scoped edit, no re-gate. Not plan-mode-safe (it writes to disk).
   TOOL_NAME.note,
+  // `append` adds lines to a DATA file (jsonl/csv/log); code and config files are
+  // refused, so it never writes gated source and needs no re-gate.
+  TOOL_NAME.append,
+  // `reddit_mark_read` only appends to the notes/<topic>/sources.md ledger.
+  TOOL_NAME.redditMarkRead,
 ]);
 
 test("every registered tool is classified read-only, mutating, or special", () => {

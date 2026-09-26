@@ -10,6 +10,8 @@ export const ENV_FLAG = {
   browser: "TSFORGE_BROWSER",
   browserPort: "TSFORGE_BROWSER_PORT",
   browserAllowPrivate: "TSFORGE_BROWSER_ALLOW_PRIVATE",
+  // Per-send turn cap override for interactive sessions (0 = unlimited).
+  maxTurns: "TSFORGE_MAX_TURNS",
   noScriptTool: "TSFORGE_NO_SCRIPT",
   noGitTool: "TSFORGE_NO_GIT_TOOL",
   noGithub: "TSFORGE_NO_GITHUB",

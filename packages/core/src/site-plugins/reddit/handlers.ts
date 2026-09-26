@@ -21,13 +21,15 @@ import { countComments, expandThread } from "./expand";
 import { parseListing, parseSubreddits, parseThread } from "./parse";
 import {
   DEFAULT_MAX_COMMENTS,
-  MAX_ASSETS_PER_THREAD,
+  MAX_COMMENT_ASSETS,
+  MAX_MARK_READ,
+  MAX_POST_ASSETS,
   MAX_MAX_COMMENTS,
   REDDIT_HOST,
   REDDIT_MEDIA_HOSTS,
   SITE,
 } from "./reddit.constants";
-import type { IListingPage } from "./reddit.types";
+import type { IListingPage, IRedditThread } from "./reddit.types";
 import {
   imagesInOrder,
   postLine,
@@ -310,19 +312,31 @@ export function createRedditHandlers(
     return `${head.join("\n")}\n\n${chunks[i - 1] ?? ""}${next}`;
   };
 
+  /** Download the thread's images in render order — post images up to
+   *  MAX_POST_ASSETS, comment images up to MAX_COMMENT_ASSETS; the rest stay
+   *  links. Files are named by their render number, so `[image 7: …/7.jpg]`. */
   const downloadAll = async (
     ctx: ISitePluginContext,
     topic: string,
-    postId: string,
-    urls: readonly string[]
+    parsed: IRedditThread
   ): Promise<Map<string, { rel: string } | { failed: string }>> => {
     const labels = new Map<string, { rel: string } | { failed: string }>();
+    const fromPost = new Set(parsed.post.images);
+    const left = { post: MAX_POST_ASSETS, comment: MAX_COMMENT_ASSETS };
 
-    for (const [i, url] of urls.slice(0, MAX_ASSETS_PER_THREAD).entries()) {
+    for (const [i, url] of imagesInOrder(parsed).entries()) {
+      const bucket = fromPost.has(url) ? "post" : "comment";
+
+      if (left[bucket] <= 0) {
+        continue;
+      }
+
+      left[bucket] -= 1;
+
       const res = await deps.download(ctx.cwd, {
         url,
         topic,
-        group: postId,
+        group: parsed.post.id,
         name: String(i + 1),
       });
 
@@ -343,9 +357,17 @@ export function createRedditHandlers(
     const state = stateOf(ctx.session);
     const chunk = typeof args.chunk === "number" ? Math.floor(args.chunk) : 1;
     const cached = state.threads.get(id);
+    const force = args.force === true;
 
-    if (cached !== undefined && chunk > 1) {
+    // Read this session: serve from cache (any chunk), never refetch.
+    if (cached !== undefined && !force) {
       return serveChunk(id, cached, chunk, topic);
+    }
+
+    // Read in an earlier session (sources.md): refuse unless forced. One long
+    // crawl re-read 55 threads it had already processed and wrote them twice.
+    if (!force && (await isRead(ctx, topic, id))) {
+      return `reddit_thread ${id}: already read for topic "${topic}" (logged in notes/${slugifyTopic(topic)}/sources.md) — skip it and move on. Pass force: true only if you really need to read it again.`;
     }
 
     ctx.progress(`↳ reddit_thread ${id}`);
@@ -373,12 +395,7 @@ export function createRedditHandlers(
       maxComments,
       args.sort
     );
-    const labels: AssetLabels = await downloadAll(
-      ctx,
-      topic,
-      id,
-      imagesInOrder(parsed)
-    );
+    const labels: AssetLabels = await downloadAll(ctx, topic, parsed);
     const saved = [...labels.values()].filter((l) => "rel" in l).length;
     const now = deps.now();
     const body = renderThread(parsed, labels, now);
@@ -418,7 +435,57 @@ export function createRedditHandlers(
     return serveChunk(id, chunks, chunk, topic);
   };
 
+  const markRead: SitePluginHandler = async (args, ctx) => {
+    const topic = str(args, "topic");
+    const raw = Array.isArray(args.posts)
+      ? args.posts.filter((p): p is string => typeof p === "string")
+      : str(args, "posts").split(/[\s,]+/u);
+    const ids = [
+      ...new Set(
+        raw.map((p) => parsePostId(p)).filter((id): id is string => id !== null)
+      ),
+    ];
+
+    if (topic.length === 0 || ids.length === 0) {
+      return "reddit_mark_read: `topic` and `posts` (post ids or Reddit URLs) are required.";
+    }
+
+    if (ids.length > MAX_MARK_READ) {
+      return `reddit_mark_read: at most ${String(MAX_MARK_READ)} posts per call (got ${String(ids.length)}) — split the list.`;
+    }
+
+    const keys = await topicKeys(ctx, topic);
+    const now = deps.now();
+    let added = 0;
+
+    for (const id of ids) {
+      const key = sourceKey(SITE, id);
+
+      if (keys.has(key)) {
+        continue;
+      }
+
+      await recordSource(
+        ctx.cwd,
+        topic,
+        {
+          site: SITE,
+          id,
+          title: "(read in an earlier crawl)",
+          url: `https://www.reddit.com/comments/${id}/`,
+          meta: "marked read",
+        },
+        now
+      );
+      keys.add(key);
+      added += 1;
+    }
+
+    return `Marked ${String(added)} thread${added === 1 ? "" : "s"} as read for "${topic}" (${String(ids.length - added)} already logged). reddit_search will flag them and reddit_thread will skip them.`;
+  };
+
   return {
+    reddit_mark_read: markRead,
     reddit_search: search,
     reddit_listing: listing,
     reddit_subreddits: subreddits,

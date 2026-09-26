@@ -108,6 +108,7 @@ import {
   BROWSER_SCREENSHOT_TOOL,
   BROWSER_CLOSE_TOOL,
   NOTE_TOOL,
+  APPEND_TOOL,
   PACKAGE_INFO_TOOL,
   PACKAGE_DOCS_TOOL,
   buildPullConventionsTool,
@@ -214,6 +215,7 @@ type AdvertisedTool =
   | typeof BROWSER_CLOSE_TOOL
   | ISiteToolSchema
   | typeof NOTE_TOOL
+  | typeof APPEND_TOOL
   | typeof PACKAGE_INFO_TOOL
   | typeof PACKAGE_DOCS_TOOL
   | ReturnType<typeof buildPullConventionsTool>
@@ -355,7 +357,9 @@ export function browserTools(caps: ICapabilityFlags): AdvertisedTool[] {
 /** `note` — append-only research notes. Offered whenever the model can research
  *  (web or browser tools on). */
 function noteTools(caps: ICapabilityFlags): AdvertisedTool[] {
-  return caps.browser === true || flags.webTools() ? [NOTE_TOOL] : [];
+  return caps.browser === true || flags.webTools()
+    ? [NOTE_TOOL, APPEND_TOOL]
+    : [];
 }
 
 /** Image capability tools — each advertised only when its backend is configured

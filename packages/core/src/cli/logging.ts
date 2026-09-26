@@ -140,6 +140,22 @@ export function makeReporter(
   return withLedger(render, logFile, runId, sessionId);
 }
 
+/** Wrap a reporter so `onCheckpoint` runs on every checkpoint event. The REPL
+ *  saves the session there: a research send can run for days, and saving only
+ *  when a send ends would lose the whole conversation to a crash or reboot. */
+export function withCheckpointHook(
+  report: Reporter,
+  onCheckpoint: () => void
+): Reporter {
+  return (event) => {
+    report(event);
+
+    if (event.kind === "checkpoint") {
+      onCheckpoint();
+    }
+  };
+}
+
 /** Resolve the run-log file when `--log` is set: an auto-named, timestamped JSONL
  *  under ~/.tsforge/logs/ (created if needed), so logs are always in one findable
  *  place and you never specify a path. Empty string = logging off. */

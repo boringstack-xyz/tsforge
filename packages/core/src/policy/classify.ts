@@ -107,9 +107,12 @@ const KIND_BY_TOOL: Readonly<Record<string, ActionKind>> = {
   [TOOL_NAME.redditThread]: "network",
   [TOOL_NAME.redditListing]: "network",
   [TOOL_NAME.redditSubreddits]: "network",
+  // Only writes the topic's sources.md ledger under notes/.
+  [TOOL_NAME.redditMarkRead]: "edit_file",
   // `note` appends to notes/<topic>.md — a low-risk file write: allowed wherever
   // edits are, denied in plan mode.
   [TOOL_NAME.note]: "edit_file",
+  [TOOL_NAME.append]: "edit_file",
   // Both call an external capability endpoint → network egress is the salient
   // risk (so a repo/mode can deny/ask them like the web tools).
   [TOOL_NAME.readImage]: "network",

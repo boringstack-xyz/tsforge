@@ -40,6 +40,18 @@ export const flags = {
    *  Off by default so injected page text can't aim the logged-in browser at a
    *  router, an internal service, or the bridge itself. */
   browserAllowPrivate: (): boolean => isOn(ENV_FLAG.browserAllowPrivate),
+  /** Per-send turn cap override: a positive integer caps every send, `0` means
+   *  unlimited; unset/invalid → undefined (the session picks its default). */
+  maxTurns: (): number | undefined => {
+    const raw = process.env[ENV_FLAG.maxTurns];
+    const n = raw === undefined || raw.trim() === "" ? Number.NaN : Number(raw);
+
+    if (!Number.isInteger(n) || n < 0) {
+      return undefined;
+    }
+
+    return n === 0 ? Number.POSITIVE_INFINITY : n;
+  },
   /** Programmatic Tool Calling: advertise the `script` tool. ON by default — it
    *  measurably speeds up read-dependent multi-file work (codemods) and is a no-op
    *  on simple tasks; withhold with TSFORGE_NO_SCRIPT (the A/B / kill switch). It

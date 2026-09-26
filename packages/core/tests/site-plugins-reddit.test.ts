@@ -36,6 +36,7 @@ import {
   listing,
   moreChildrenJson,
   NOW_UTC,
+  post,
   searchJson,
   subredditsJson,
   threadJson,
@@ -469,5 +470,142 @@ describe("handlers", () => {
     );
 
     expect(out).toContain("- r/Guitar · 3,100,000 members — All things guitar");
+  });
+});
+
+describe("long crawls", () => {
+  test("a thread read in an earlier session is refused unless forced", async () => {
+    const cwd = await tempDir();
+    const f = fakeFetcher();
+
+    await createRedditHandlers(deps(f)).reddit_thread?.(
+      { post: "p1", topic: "t" },
+      { session: session(), cwd, progress: () => undefined }
+    );
+
+    const fresh = createRedditHandlers(deps(f));
+    const ctx = { session: session(), cwd, progress: () => undefined };
+    const before = f.paths.length;
+
+    expect(
+      await fresh.reddit_thread?.({ post: "p1", topic: "t" }, ctx)
+    ).toContain("already read");
+    expect(f.paths.length).toBe(before);
+    expect(
+      await fresh.reddit_thread?.({ post: "p1", topic: "t", force: true }, ctx)
+    ).toContain("chunk 1/");
+    expect(f.paths.length).toBeGreaterThan(before);
+  });
+
+  test("reddit_mark_read logs earlier threads once, so search flags and thread skips them", async () => {
+    const cwd = await tempDir();
+    const d = deps();
+    const h = createRedditHandlers(d);
+    const ctx = { session: session(), cwd, progress: () => undefined };
+    const out = await h.reddit_mark_read?.(
+      {
+        topic: "t",
+        posts: [
+          "https://www.reddit.com/r/Guitar/comments/p1/x/",
+          "p2",
+          "p2",
+          "not a post",
+        ],
+      },
+      ctx
+    );
+
+    expect(out).toContain("Marked 2 threads as read");
+    expect(
+      await h.reddit_mark_read?.({ topic: "t", posts: ["p1"] }, ctx)
+    ).toContain("Marked 0 threads");
+    expect(await readFile(join(cwd, "notes/t/sources.md"), "utf8")).toContain(
+      "- [reddit:p2] (read in an earlier crawl) — https://www.reddit.com/comments/p2/ (marked read;"
+    );
+    expect(await h.reddit_thread?.({ post: "p1", topic: "t" }, ctx)).toContain(
+      "already read"
+    );
+
+    d.fetchJson = async () => ({ ok: true, value: searchJson() });
+    expect(await h.reddit_search?.({ query: "x", topic: "t" }, ctx)).toMatch(
+      /- p2 .* already read/u
+    );
+  });
+
+  test("comment images are capped separately from the post's", async () => {
+    const cwd = await tempDir();
+    const images = Array.from(
+      { length: 25 },
+      (_, i) => `https://i.redd.it/c${String(i)}.jpg`
+    );
+    const json = threadJson();
+
+    json[1] = listing(
+      images.map((u, i) => comment(`k${String(i)}`, { body: `see ${u}` }))
+    );
+
+    const d = deps();
+
+    d.fetchJson = async (_s, path) =>
+      path.startsWith("/comments/p1.json")
+        ? { ok: true, value: json }
+        : { ok: true, value: moreChildrenJson() };
+
+    const out = await createRedditHandlers(d).reddit_thread?.(
+      { post: "p1", topic: "t" },
+      { session: session(), cwd, progress: () => undefined }
+    );
+
+    // 1 post image + 10 comment images downloaded; the rest stay links.
+    expect(d.downloads).toHaveLength(11);
+    expect(out).toContain(
+      "[image 26: https://i.redd.it/c24.jpg — comment by u/user_k24]"
+    );
+  });
+
+  test("galleries and previews use the ≤1080px rendition", () => {
+    const gallery = post("g2", {
+      is_gallery: true,
+      gallery_data: { items: [{ media_id: "a" }] },
+      media_metadata: {
+        a: {
+          status: "valid",
+          s: { u: "https://preview.redd.it/a.jpg?width=4000", x: 4000 },
+          p: [
+            { u: "https://preview.redd.it/a.jpg?width=640", x: 640 },
+            { u: "https://preview.redd.it/a.jpg?width=1080", x: 1080 },
+          ],
+        },
+      },
+    });
+    const direct = post("d1", {
+      url: "https://i.redd.it/orig.jpg",
+      post_hint: "image",
+      preview: {
+        images: [
+          {
+            source: {
+              url: "https://preview.redd.it/orig.jpg?width=3024",
+              width: 3024,
+            },
+            resolutions: [
+              { url: "https://preview.redd.it/orig.jpg?width=960", width: 960 },
+              {
+                url: "https://preview.redd.it/orig.jpg?width=2160",
+                width: 2160,
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const page = parseListing(listing([gallery, direct]));
+
+    expect(page?.posts[0]?.images).toEqual([
+      "https://preview.redd.it/a.jpg?width=1080",
+    ]);
+    expect(page?.posts[1]?.images).toEqual([
+      "https://preview.redd.it/orig.jpg?width=960",
+    ]);
   });
 });

@@ -26,6 +26,7 @@ import {
   doBrowserTabs,
 } from "./browser-tools";
 import { doNote } from "./note-tool";
+import { doAppend } from "./append-tool";
 import { sitePluginTool } from "./site-plugin-tools";
 import { doPackageInfo, doPackageDocs } from "./package-info";
 import { doScript } from "./script-tool";
@@ -110,7 +111,9 @@ const HANDLERS: Record<ToolName, ToolHandler> = {
   [TOOL_NAME.redditThread]: sitePluginTool(TOOL_NAME.redditThread),
   [TOOL_NAME.redditListing]: sitePluginTool(TOOL_NAME.redditListing),
   [TOOL_NAME.redditSubreddits]: sitePluginTool(TOOL_NAME.redditSubreddits),
+  [TOOL_NAME.redditMarkRead]: sitePluginTool(TOOL_NAME.redditMarkRead),
   [TOOL_NAME.note]: (a, c) => doNote(a, c),
+  [TOOL_NAME.append]: doAppend,
   // The script's stubs RPC back into executeTool — passed as `execute` here so
   // script-tool.ts never imports this module (no cycle), and a nested `script`
   // call is rejected (script is not in SCRIPT_EXPOSABLE_TOOLS).
