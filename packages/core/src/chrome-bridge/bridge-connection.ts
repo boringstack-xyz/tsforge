@@ -58,6 +58,11 @@ export class BridgeHub {
     this.helloTimeoutMs = opts.helloTimeoutMs ?? HELLO_TIMEOUT_MS;
   }
 
+  /** Set when the last hello spoke another protocol version; cleared by the
+   *  next successful pairing. Lets /browser say "reload the extension" instead
+   *  of an unexplained "waiting". */
+  outdated = false;
+
   get connected(): boolean {
     return this.active !== null;
   }
@@ -176,10 +181,13 @@ export class BridgeHub {
     }
 
     if (hello.protocol !== PROTOCOL_VERSION) {
+      this.outdated = true;
       sock.close(CLOSE_CODE.protocolMismatch, "protocol mismatch");
 
       return;
     }
+
+    this.outdated = false;
 
     const previous = this.active;
 

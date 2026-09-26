@@ -2,7 +2,7 @@
   "name": "@tsforge/chrome-extension",
   "type": "module",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "tsforge Chrome extension — lets a local tsforge session read pages in your logged-in browser (read + navigate only).",
   "scripts": {
     "build": "bun scripts/build.ts"

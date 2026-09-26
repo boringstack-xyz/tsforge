@@ -57,6 +57,10 @@ export const RESEARCH_TOOLS: ReadonlySet<string> = new Set([
   TOOL_NAME.browserClick,
   TOOL_NAME.browserScroll,
   TOOL_NAME.browserScreenshot,
+  TOOL_NAME.redditSearch,
+  TOOL_NAME.redditThread,
+  TOOL_NAME.redditListing,
+  TOOL_NAME.redditSubreddits,
 ]);
 
 export function toolCallsDoResearch(

@@ -5,6 +5,7 @@
  */
 import { isRecord } from "../../core/src/lib/guards/guards";
 import { createPageAgent, type IPageAgent } from "./page-agent";
+import { pageFetch } from "./page-fetch";
 
 const INSTALLED = "__tsforgePageAgentInstalled";
 const QUIET_MS = 400;
@@ -54,6 +55,11 @@ async function dispatch(
       );
     case "scroll":
       return agent.scroll(typeof params.to === "string" ? params.to : "page");
+    case "fetch":
+      return pageFetch(params.url, {
+        fetch: (url, init) => fetch(url, init),
+        pageUrl: () => location.href,
+      });
     default:
       return { error: "unknown page method" };
   }

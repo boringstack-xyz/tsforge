@@ -112,7 +112,8 @@ export function startBrowserBridge(opts: IStartBridgeOptions): IBrowserBridge {
 
   return {
     port,
-    status: (): BridgeStatus => (hub.connected ? "connected" : "listening"),
+    status: (): BridgeStatus =>
+      hub.connected ? "connected" : hub.outdated ? "outdated" : "listening",
     request: (method, params) =>
       hub.request(method, params, METHOD_TIMEOUT_MS[method]),
     stop: () => {

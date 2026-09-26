@@ -19,7 +19,12 @@ export const PING_MS = 20_000;
 export const MAX_BACKOFF_MS = 30_000;
 
 export type ConnectionStatus =
-  "connecting" | "connected" | "waiting" | "bad-token" | "no-token";
+  | "connecting"
+  | "connected"
+  | "waiting"
+  | "bad-token"
+  | "no-token"
+  | "outdated";
 
 /** The subset of the browser WebSocket used. */
 export interface IWsLike {
@@ -189,7 +194,11 @@ export class Connection {
       return;
     }
 
-    this.deps.onStatus("waiting");
+    // tsforge speaks a different protocol: say so, but keep retrying on the
+    // normal backoff — updating either side then reconnects on its own.
+    this.deps.onStatus(
+      code === CLOSE_CODE.protocolMismatch ? "outdated" : "waiting"
+    );
 
     // Replaced by our own newer connection: that one is live, don't fight it.
     if (code === CLOSE_CODE.replaced) {

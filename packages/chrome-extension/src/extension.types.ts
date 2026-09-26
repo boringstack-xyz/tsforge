@@ -70,7 +70,7 @@ export interface IChromeApi {
   captureTab(tab: ITab): Promise<string>;
 }
 
-export type PageMethod = "snapshot" | "click" | "scroll";
+export type PageMethod = "snapshot" | "click" | "scroll" | "fetch";
 
 /** Handler state that must survive service-worker restarts. */
 export interface IHandlerState {

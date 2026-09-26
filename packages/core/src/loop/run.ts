@@ -74,6 +74,7 @@ import { resolveSentryCapability } from "./tools/sentry-ops";
 import { connectMcpServers, mergeMcpServers } from "../mcp";
 import { openBrowserSession } from "../chrome-bridge";
 import { BROWSER_RESEARCH_GUIDANCE } from "../agent/agent.constants";
+import { sitePluginGuidance } from "../site-plugins";
 import type { IMcpServerConfig } from "../mcp";
 import { loadGlobalMcpServers } from "../models-config";
 import { formatReport } from "./review/review-change";
@@ -1434,7 +1435,11 @@ export async function runTask(
   const system = messages[0];
 
   if (browserOn && system !== undefined) {
-    system.content = `${system.content}\n\n${BROWSER_RESEARCH_GUIDANCE}`;
+    system.content = [
+      system.content,
+      BROWSER_RESEARCH_GUIDANCE,
+      ...sitePluginGuidance().map((g) => g.text),
+    ].join("\n\n");
   }
 
   // Mode-aware reasoning cap: scratch tasks over-think unbounded, so default

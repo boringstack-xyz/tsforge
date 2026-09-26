@@ -3,6 +3,7 @@ import { mkdtemp, readFile, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startBrowserBridge } from "../src/chrome-bridge/bridge-server";
+import { PROTOCOL_VERSION } from "../src/chrome-bridge/chrome-bridge.constants";
 import { loadOrCreateBridgeToken } from "../src/chrome-bridge/bridge-token";
 import type { IBrowserBridge } from "../src/chrome-bridge/chrome-bridge.types";
 
@@ -62,12 +63,15 @@ describe("startBrowserBridge", () => {
     ws.send(
       JSON.stringify({
         type: "hello",
-        protocol: 1,
+        protocol: PROTOCOL_VERSION,
         token: TOKEN,
         extVersion: "t",
       })
     );
-    expect(await nextMessage(ws)).toEqual({ type: "welcome", protocol: 1 });
+    expect(await nextMessage(ws)).toEqual({
+      type: "welcome",
+      protocol: PROTOCOL_VERSION,
+    });
     expect(bridge.status()).toBe("connected");
 
     const reqSeen = nextMessage(ws);

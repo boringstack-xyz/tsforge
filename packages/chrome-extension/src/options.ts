@@ -7,6 +7,8 @@ const STATUS_TEXT: Readonly<Record<string, string>> = {
   connecting: "Connecting…",
   waiting: "Waiting for tsforge (start it with TSFORGE_BROWSER=1).",
   "bad-token": "tsforge rejected the token — paste the one /browser prints.",
+  outdated:
+    "tsforge and this extension are different versions — rebuild the extension (bun run --cwd packages/chrome-extension build) and reload it here.",
   "no-token": "Paste the token from tsforge's /browser command.",
 };
 

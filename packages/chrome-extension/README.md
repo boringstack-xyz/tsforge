@@ -19,6 +19,12 @@ Where the rules live:
 - `src/handlers.ts` — tab-group scoping, adopt permission, http(s)-only navigation.
 - `src/snapshot.ts` — sanitized page → HTML + ref table (no scripts, form values, hidden text).
 - `src/connection.ts` — localhost bridge client (hello/token, ping, backoff reconnect).
+- `src/fetch-policy.ts` + `src/page-fetch.ts` — `page.fetch` for built-in site plugins
+  (Reddit): same-origin GET from a group tab, hosts compiled in (`FETCH_HOSTS`), no
+  cross-site redirects, JSON/text only, ≤ 5 MB.
+
+After updating tsforge, rebuild and reload the extension — `/browser` reports it as
+**outdated** when the protocol versions differ.
 
 The protocol types are shared with tsforge (`packages/core/src/chrome-bridge/`). The
 manifest's public `key` pins the extension ID the bridge accepts.

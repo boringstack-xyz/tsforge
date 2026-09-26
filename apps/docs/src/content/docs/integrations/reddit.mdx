@@ -1,0 +1,59 @@
+---
+title: Research on Reddit
+description: "Give tsforge a research brief and it works Reddit like an expert — targeted searches, whole comment threads through Reddit's structured data, images saved next to your notes, and a ranked insight report. Through your logged-in Chrome, read-only."
+---
+
+The Reddit plugin sits on top of the [Chrome bridge](/integrations/chrome/). Instead of opening a tab per thread and clicking "load more replies", the agent reads **Reddit's own JSON views** through your logged-in browser. One call returns a whole discussion, with scores, authors and nested replies, in about a tenth of the tokens the rendered page would cost.
+
+Give it a brief. Nothing in tsforge is tied to a particular topic or product:
+
+```text
+Research the problems people have with guitar wiring and gather valuable
+feedback for our app. Save the findings and write a report.
+```
+
+## What the agent does
+
+1. **Plans.** It restates the goal, lists 5–10 angles to search, and picks a notes topic, for example `guitar-wiring-issues`.
+2. **Finds the communities** with `reddit_subreddits`.
+3. **Searches wide, then deep** with `reddit_search`: several phrasings per angle, `sort=top` over a year or all time for depth, `sort=new` for current pain. Threads it has already read are marked `already read`.
+4. **Reads whole threads** with `reddit_thread`. Collapsed replies ("load more comments", "continue this thread") are expanded automatically, up to a comment budget (500 by default, 2000 at most).
+5. **Records findings** after every thread or two with `note` (`file: "findings"`), one entry per pain point: what, evidence (quote, author, score, link), signal (frequency × intensity), and the implication for your product.
+6. **Writes the report** with `note` (`file: "report"`, `replace: true`): themes ranked by frequency × intensity, quotes with links, who is asking, product ideas tied to themes, and gaps.
+
+## The notes folder
+
+```text
+notes/guitar-wiring-issues/
+  sources.md     every thread read (link, title, score, comments, date) — written by tsforge
+  findings.md    the agent's findings, append-only
+  report.md      the synthesis (the only file the agent may rewrite)
+  assets/<post-id>/1.jpg …   images from posts and comments
+```
+
+`sources.md` also stops duplicate reads: a run that lasts days restarts many times and never re-reads a thread it already logged.
+
+## Images
+
+When a thread is read, its images are downloaded: the post's image or gallery (in order), and images linked or embedded in comments (`i.redd.it`, `preview.redd.it`, `external-preview.redd.it`, `i.imgur.com`). The limit is 30 per thread and 10 MB each. They appear inline in what the agent reads, for example `[image 3: notes/…/assets/abc123/3.jpg — comment by u/someone]`.
+
+The agent looks at an image with `read_image` (your vision model) only when it carries the insight, such as a wiring diagram or a photo of the problem. Video (`v.redd.it`) is linked, never downloaded.
+
+## The tools
+
+| Tool | What it does |
+| --- | --- |
+| `reddit_subreddits` | Finds communities for a domain: name, members, description. |
+| `reddit_search` | Searches site-wide or inside one subreddit. Returns one line per post, with `after` for the next page. |
+| `reddit_listing` | Browses a subreddit: hot, new, top or rising. |
+| `reddit_thread` | Reads a whole thread in chunks, saves its images, and logs it in `sources.md`. |
+
+## Safety and limits
+
+- **Read-only.** The plugin only builds Reddit's read endpoints. There is no posting, voting, joining or messaging.
+- **One tab.** It opens a single `reddit.com` tab in the tsforge group and reuses it for every request.
+- **Paced.** At most one request per second. It backs off on HTTP 429 (honouring `Retry-After`) and on server errors, then tells the agent to pause instead of hammering the site.
+- **The extension decides.** `page.fetch`, the extension capability the plugin uses, only makes same-origin GET requests from a tsforge tab. The allowed hosts (`www.reddit.com`, `old.reddit.com`) are compiled into the extension, so tsforge cannot widen them.
+- **Untrusted content.** Reddit text is marked as untrusted data. The agent is told never to follow instructions found inside threads.
+
+After updating tsforge, rebuild the extension and reload it in `chrome://extensions`. An older extension shows as **outdated** in `/browser` until you do.

@@ -29,6 +29,19 @@ it.** Add the name in step 1 and typecheck tells you exactly what is missing.
 If the tool mutates the workspace it must surface `mutated` (and `edit`/`create` for file
 writes) on its event, or the gate will not re-run and a stale green can be reported as done.
 
+### A new site plugin (research on a specific site)
+
+Built-in only: a plugin fetches with the user's cookies, so it ships in tsforge's source. Reddit (`site-plugins/reddit/`) is the worked example.
+
+| Step | Where |
+| --- | --- |
+| 1. Build the plugin | `site-plugins/<site>/`: URL builders (read endpoints only), guarded parsing, rendering, tool schemas, handlers, a guidance playbook, and an `ISitePlugin` in `index.ts` |
+| 2. Register it | `SITE_PLUGINS` in `site-plugins/registry.ts` |
+| 3. Name its tools | `TOOL_NAME` + `TOOL_SPECS` in `agent/agent.constants.ts`, `HANDLERS` via `sitePluginTool()` in `loop/tools/execute-tool.ts`, `network` in `policy/classify.ts`, `RESEARCH_TOOLS` in `loop/readonly-spin.ts` |
+| 4. Allow its hosts | `FETCH_HOSTS` in `packages/chrome-extension/src/fetch-policy.ts` (a test fails until it matches the registry) |
+
+The plugin's tools are advertised with the browser tools, and its guidance is appended once when the browser capability turns on.
+
 ### A new CLI command
 
 Write an `async function yourMode(args: ICliArgs): Promise<number>` in `cli.ts`, then add
