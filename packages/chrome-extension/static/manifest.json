@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "tsforge",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Lets your local tsforge agent read pages in your logged-in Chrome — read and navigate only, inside a 'tsforge' tab group.",
   "minimum_chrome_version": "120",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtLASpo08urcmLvcC5CpQaJnhvq/11Lr5IswXWvkgswJpPJ4qGpYgi4A/nLUaszU5prR7VUlPPTzCQpCKywwE9QYq/ZGkWJN+4TDgUwdMmB0UKz4qusicw91B8YEAbnulEmMFi/qYqnMhohaAJtmsMJ/EQA/Eb5EP4QznmI0piJGwpR3sPsusY+VyZ9HINIqI1RZDO6/3P5fvjAOULX5FIE08xIV38XI0bh0JkwtapRkIyExR2sgrpub6LdmqUPQu2gBNxTP/0vbq0TlE2eMrhijhQltnyveoscZYYe+W0UNMDQ8F1+xyykywinj7BNHhCYe5bDfWqXYa2rr8OlvWSQIDAQAB",

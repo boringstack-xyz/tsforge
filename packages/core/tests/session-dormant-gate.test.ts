@@ -329,6 +329,9 @@ describe("a research session in a no-code folder has what it needs from turn 1",
 
       expect(first).toContain("note");
       expect(first).toContain("browser_read");
+      // Site plugins ride the same capability: Reddit tools + its playbook.
+      expect(first).toContain("reddit_thread");
+      expect(session.messages[0]?.content).toContain("## Researching Reddit");
       expect(first).not.toContain("check");
       expect(first).not.toContain("pull_conventions");
     } finally {

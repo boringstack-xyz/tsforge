@@ -8,6 +8,8 @@ export function browserChipText(status: BridgeStatus, port: number): string {
       return `connected · :${String(port)} · /browser`;
     case "listening":
       return `waiting for the Chrome extension · :${String(port)} · /browser to pair`;
+    case "outdated":
+      return `the Chrome extension is outdated — rebuild it and reload it in chrome://extensions · /browser`;
     case "in-use":
       return `port ${String(port)} in use (another tsforge session drives Chrome) — tools off here`;
   }
@@ -37,7 +39,14 @@ export function browserReportText(r: IBrowserReport): string {
 
   const lines = [`  browser: ${browserChipText(r.status, r.port)}`];
 
-  if (r.status !== "connected") {
+  if (r.status === "outdated") {
+    lines.push(
+      "",
+      "  tsforge was updated and the extension it talks to is older:",
+      SETUP[0] ?? "",
+      "  2. chrome://extensions → tsforge → the reload ↻ button (your token stays)."
+    );
+  } else if (r.status !== "connected") {
     lines.push("", "  Pair the tsforge Chrome extension:", ...SETUP);
   }
 

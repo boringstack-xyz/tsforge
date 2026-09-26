@@ -162,6 +162,7 @@ import {
 import { runWriteGuard } from "./write-guard";
 import { ExternalPackDriftError } from "../rule-packs/drift-error";
 import { upsertGateFeedback } from "./context-hygiene";
+import { sitePluginTools, type ISiteToolSchema } from "../site-plugins";
 
 /**
  * The shared turn primitives — one tool-using-conversation step and the
@@ -211,6 +212,7 @@ type AdvertisedTool =
   | typeof BROWSER_SCROLL_TOOL
   | typeof BROWSER_SCREENSHOT_TOOL
   | typeof BROWSER_CLOSE_TOOL
+  | ISiteToolSchema
   | typeof NOTE_TOOL
   | typeof PACKAGE_INFO_TOOL
   | typeof PACKAGE_DOCS_TOOL
@@ -345,6 +347,8 @@ export function browserTools(caps: ICapabilityFlags): AdvertisedTool[] {
     BROWSER_SCROLL_TOOL,
     ...(caps.vision === true ? [BROWSER_SCREENSHOT_TOOL] : []),
     BROWSER_CLOSE_TOOL,
+    // Site plugins (reddit_* …) ride the same bridge, so the same gate.
+    ...sitePluginTools(),
   ];
 }
 

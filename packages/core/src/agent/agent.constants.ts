@@ -52,6 +52,10 @@ export const TOOL_NAME = {
   browserScroll: "browser_scroll",
   browserScreenshot: "browser_screenshot",
   browserClose: "browser_close",
+  redditSearch: "reddit_search",
+  redditThread: "reddit_thread",
+  redditListing: "reddit_listing",
+  redditSubreddits: "reddit_subreddits",
   note: "note",
   script: "script",
   spawnAgent: "spawn_agent",
@@ -153,6 +157,10 @@ export const TOOL_SPECS: Readonly<Record<ToolName, IToolSpec>> = {
   [TOOL_NAME.browserScroll]: { readOnly: true, scriptExposable: false },
   [TOOL_NAME.browserScreenshot]: { readOnly: true, scriptExposable: false },
   [TOOL_NAME.browserClose]: { readOnly: true, scriptExposable: false },
+  [TOOL_NAME.redditSearch]: { readOnly: true, scriptExposable: false },
+  [TOOL_NAME.redditThread]: { readOnly: true, scriptExposable: false },
+  [TOOL_NAME.redditListing]: { readOnly: true, scriptExposable: false },
+  [TOOL_NAME.redditSubreddits]: { readOnly: true, scriptExposable: false },
   // `note` appends to ./notes/<topic>.md — a disk write (withheld in plan mode),
   // but outside the code scope/write-guard: notes are research output, not code.
   [TOOL_NAME.note]: { readOnly: false, scriptExposable: false },
@@ -575,7 +583,7 @@ export const NOTE_TOOL = {
   function: {
     name: TOOL_NAME.note,
     description:
-      "Append research notes to notes/<topic>.md in the workspace (timestamped, append-only — nothing is ever overwritten). Save findings as you go, every page or two, so nothing is lost when your context is compacted.",
+      'Append research notes in the workspace (timestamped, append-only). Without `file`: notes/<topic>.md. With file: "findings": notes/<topic>/findings.md; file: "report" with replace: true rewrites notes/<topic>/report.md (the only file that can be rewritten — for the final synthesis). Save findings as you go, every page or two, so nothing is lost when your context is compacted.',
     parameters: {
       type: "object",
       properties: {
@@ -588,6 +596,17 @@ export const NOTE_TOOL = {
         source: {
           type: "string",
           description: "URL the notes came from (optional)",
+        },
+        file: {
+          type: "string",
+          enum: ["findings", "report"],
+          description:
+            "use a topic folder: 'findings' (append) or 'report' (the synthesis)",
+        },
+        replace: {
+          type: "boolean",
+          description:
+            "only with file: 'report' — rewrite the report instead of appending",
         },
       },
       required: ["topic", "text"],

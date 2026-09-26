@@ -19,6 +19,7 @@ import type {
   IStateStore,
   ITab,
 } from "./extension.types";
+import { fetchUrlProblem } from "./fetch-policy";
 import { isNavigableUrl } from "./url-policy";
 
 class BridgeError extends Error {
@@ -113,6 +114,8 @@ export class Handlers {
         return this.click(num(p, "tabId"), p, s);
       case "page.scroll":
         return this.inPage(num(p, "tabId"), s, "scroll", { to: p.to });
+      case "page.fetch":
+        return this.fetch(num(p, "tabId"), p.url, s);
     }
   }
 
@@ -292,6 +295,34 @@ export class Handlers {
     }
 
     return this.api.runInPage(tabId, method, params);
+  }
+
+  /** Same-origin GET inside a group tab, for built-in site plugins. The URL is
+   *  vetted here against the tab's live origin AND again in the page. */
+  private async fetch(
+    tabId: number,
+    url: unknown,
+    s: IHandlerState
+  ): Promise<unknown> {
+    const tab = await this.requireGroup(tabId, s);
+    const problem = fetchUrlProblem(url, tab.url);
+
+    if (problem !== null) {
+      throw new BridgeError("denied", problem);
+    }
+
+    const res = await this.api.runInPage(tabId, "fetch", { url });
+
+    if (!isRecord(res) || typeof res.error === "string") {
+      throw new BridgeError(
+        "denied",
+        isRecord(res) && typeof res.error === "string"
+          ? res.error
+          : "page.fetch: no reply from the page"
+      );
+    }
+
+    return res;
   }
 
   private async click(

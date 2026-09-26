@@ -26,6 +26,7 @@ import {
   doBrowserTabs,
 } from "./browser-tools";
 import { doNote } from "./note-tool";
+import { sitePluginTool } from "./site-plugin-tools";
 import { doPackageInfo, doPackageDocs } from "./package-info";
 import { doScript } from "./script-tool";
 import { doSpawnAgent } from "./spawn-agent";
@@ -105,6 +106,10 @@ const HANDLERS: Record<ToolName, ToolHandler> = {
   [TOOL_NAME.browserScroll]: doBrowserScroll,
   [TOOL_NAME.browserScreenshot]: (a, c) => doBrowserScreenshot(a, c),
   [TOOL_NAME.browserClose]: doBrowserClose,
+  [TOOL_NAME.redditSearch]: sitePluginTool(TOOL_NAME.redditSearch),
+  [TOOL_NAME.redditThread]: sitePluginTool(TOOL_NAME.redditThread),
+  [TOOL_NAME.redditListing]: sitePluginTool(TOOL_NAME.redditListing),
+  [TOOL_NAME.redditSubreddits]: sitePluginTool(TOOL_NAME.redditSubreddits),
   [TOOL_NAME.note]: (a, c) => doNote(a, c),
   // The script's stubs RPC back into executeTool — passed as `execute` here so
   // script-tool.ts never imports this module (no cycle), and a nested `script`

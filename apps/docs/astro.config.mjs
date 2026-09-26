@@ -205,6 +205,7 @@ export default defineConfig({
             { label: "Sentry", link: "/integrations/sentry/" },
             { label: "Web access", link: "/integrations/web-tools/" },
             { label: "Research in your Chrome", link: "/integrations/chrome/" },
+            { label: "Research on Reddit", link: "/integrations/reddit/" },
             { label: "Decision memory", link: "/integrations/decision-memory/" },
           ],
         },

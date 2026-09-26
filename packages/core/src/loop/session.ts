@@ -111,6 +111,7 @@ import {
   CHECKLIST_SNAPSHOT_MARKER,
 } from "./harness-inject";
 import { announcesNextStep } from "./next-step";
+import { sitePluginGuidance } from "../site-plugins";
 import {
   autoCompactPct as compactThresholdPct,
   compactConversation,
@@ -2792,6 +2793,10 @@ export class Session {
       NOTE_TOOL,
     ]);
     this.guideOnce(BROWSER_MARKER, BROWSER_RESEARCH_GUIDANCE);
+
+    for (const g of sitePluginGuidance()) {
+      this.guideOnce(g.marker, g.text);
+    }
 
     return status;
   }

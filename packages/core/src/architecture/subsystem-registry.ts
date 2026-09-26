@@ -144,6 +144,11 @@ export const SUBSYSTEM_REGISTRY: Readonly<Record<string, ISubsystemEntry>> = {
     purpose: "Onboarding wizard that writes a project's initial tsforge config",
     tier: "optional",
   },
+  "site-plugins": {
+    purpose:
+      "Built-in site experts (Reddit…) that read a site's structured data through the Chrome bridge",
+    tier: "optional",
+  },
   spec: {
     purpose:
       "Task and spec shapes, spec parsing, and test generation from intent",

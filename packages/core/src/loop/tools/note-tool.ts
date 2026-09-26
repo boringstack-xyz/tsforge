@@ -1,80 +1,74 @@
 /**
- * `note` — append research notes to `notes/<topic>.md` in the workspace.
+ * `note` — append research notes under `notes/` in the workspace.
  * Append-only and outside the code scope / write-guard on purpose: notes are
  * research output, not code, and they must survive context compaction during a
- * long browsing session. The path is fixed to `<cwd>/notes/`; the realpath
- * check refuses a `notes` symlink pointing elsewhere.
+ * long browsing session.
+ *
+ * Without `file`: `notes/<topic>.md` (the original single-file layout).
+ * With `file`: a topic folder — `notes/<topic>/findings.md` (append) or
+ * `notes/<topic>/report.md`, the one file `replace: true` may rewrite, so a
+ * synthesis can improve as the research does. `sources.md` in the same folder
+ * is written by site plugins, never by `note`.
  */
-import { appendFile, lstat, mkdir, realpath, stat } from "node:fs/promises";
-import { join, relative, sep } from "node:path";
+import { appendFile, stat, writeFile } from "node:fs/promises";
+import {
+  resolveNotesPath,
+  slugifyTopic,
+  type NotesPath,
+} from "../../lib/notes/notes-path";
 import { reject, str, type IToolContext } from "./tool-context";
 
-export const NOTES_DIR = "notes";
+export { NOTES_DIR, slugifyTopic } from "../../lib/notes/notes-path";
 
-const MAX_SLUG = 60;
 const MAX_NOTE_CHARS = 20_000;
 
-export function slugifyTopic(topic: string): string {
-  const slug = topic
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[^a-z0-9]+/gu, "-")
-    .replace(/^-+|-+$/gu, "")
-    .slice(0, MAX_SLUG)
-    .replace(/-+$/gu, "");
+/** A report rewrite may be a whole synthesis — allow more than one note. */
+const MAX_REPORT_CHARS = 60_000;
 
-  return slug.length > 0 ? slug : "notes";
-}
+const NOTE_FILES = new Set(["findings", "report"]);
 
-function isInside(root: string, target: string): boolean {
-  const rel = relative(root, target);
-
-  return rel.length > 0 && !rel.startsWith("..") && !rel.startsWith(sep);
-}
-
-async function exists(path: string): Promise<boolean> {
-  try {
-    await lstat(path);
-
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/** `<cwd>/notes/<slug>.md`, or an error string when `notes` (or the file) is a
- *  symlink / non-directory that would send the write outside the workspace. */
-export async function resolveNotePath(
+export function resolveNotePath(
   cwd: string,
-  topic: string
-): Promise<{ path: string; rel: string } | { error: string }> {
-  const root = await realpath(cwd);
-  const dir = join(root, NOTES_DIR);
+  topic: string,
+  file?: string
+): Promise<NotesPath> {
+  const slug = slugifyTopic(topic);
 
-  await mkdir(dir, { recursive: true });
-
-  if (!(await stat(dir)).isDirectory()) {
-    return { error: `${NOTES_DIR}/ exists but is not a directory` };
-  }
-
-  if (!isInside(root, await realpath(dir))) {
-    return { error: `${NOTES_DIR}/ resolves outside the workspace` };
-  }
-
-  const rel = `${NOTES_DIR}/${slugifyTopic(topic)}.md`;
-  const path = join(root, rel);
-
-  if ((await exists(path)) && !isInside(root, await realpath(path))) {
-    return { error: `${rel} resolves outside the workspace` };
-  }
-
-  return { path, rel };
+  return file === undefined
+    ? resolveNotesPath(cwd, [`${slug}.md`])
+    : resolveNotesPath(cwd, [slug, `${file}.md`]);
 }
 
 function entry(text: string, source: string, at: Date): string {
   const src = source.length > 0 ? `Source: ${source}\n\n` : "";
 
   return `\n## ${at.toISOString()}\n\n${src}${text.trim()}\n`;
+}
+
+/** Argument errors, or null when the call is well-formed. */
+function argError(
+  topic: string,
+  text: string,
+  file: string | undefined,
+  replace: boolean
+): string | null {
+  if (topic.length === 0 || text.trim().length === 0) {
+    return "note: `topic` and `text` are required.";
+  }
+
+  if (file !== undefined && !NOTE_FILES.has(file)) {
+    return 'note: `file` must be "findings" or "report".';
+  }
+
+  if (replace && file !== "report") {
+    return 'note: `replace` is only allowed with file: "report" — everything else is append-only.';
+  }
+
+  const cap = file === "report" ? MAX_REPORT_CHARS : MAX_NOTE_CHARS;
+
+  return text.length > cap
+    ? `note: text is ${String(text.length)} chars — keep one note under ${String(cap)} (split it into several calls).`
+    : null;
 }
 
 export async function doNote(
@@ -84,36 +78,33 @@ export async function doNote(
 ): Promise<string> {
   const topic = str(args, "topic").trim();
   const text = str(args, "text");
+  const rawFile = str(args, "file").trim();
+  const file = rawFile.length > 0 ? rawFile : undefined;
+  const replace = args.replace === true;
+  const invalid = argError(topic, text, file, replace);
 
-  if (topic.length === 0 || text.trim().length === 0) {
-    return reject(ctx, "note", "note: `topic` and `text` are required.");
+  if (invalid !== null) {
+    return reject(ctx, "note", invalid);
   }
 
-  if (text.length > MAX_NOTE_CHARS) {
-    return reject(
-      ctx,
-      "note",
-      `note: text is ${String(text.length)} chars — keep one note under ${String(MAX_NOTE_CHARS)} (split it into several calls).`
-    );
-  }
-
-  const target = await resolveNotePath(ctx.cwd, topic);
+  const target = await resolveNotePath(ctx.cwd, topic, file);
 
   if ("error" in target) {
     return reject(ctx, "note", `note: ${target.error}`);
   }
 
-  await appendFile(
-    target.path,
-    entry(text, str(args, "source").trim(), now()),
-    {
-      flag: "a",
-    }
-  );
+  const source = str(args, "source").trim();
+
+  if (replace) {
+    await writeFile(target.path, `${text.trim()}\n`);
+  } else {
+    await appendFile(target.path, entry(text, source, now()), { flag: "a" });
+  }
 
   const size = (await stat(target.path)).size;
+  const verb = replace ? "Wrote" : "Appended";
 
   ctx.report({ kind: "tool", task: ctx.task, message: `↳ note ${target.rel}` });
 
-  return `Appended ${String(text.length)} chars to ${target.rel} (${String(Math.ceil(size / 1024))} KB total).`;
+  return `${verb} ${String(text.length)} chars to ${target.rel} (${String(Math.ceil(size / 1024))} KB total).`;
 }

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { BridgeHub } from "../src/chrome-bridge/bridge-connection";
+import { PROTOCOL_VERSION } from "../src/chrome-bridge/chrome-bridge.constants";
 import type { ISocketLike } from "../src/chrome-bridge/chrome-bridge.types";
 
 class FakeSocket implements ISocketLike {
@@ -21,7 +22,7 @@ class FakeSocket implements ISocketLike {
 
 const TOKEN = "a-very-secret-token-123";
 
-function hello(token = TOKEN, protocol = 1): string {
+function hello(token = TOKEN, protocol = PROTOCOL_VERSION): string {
   return JSON.stringify({ type: "hello", protocol, token, extVersion: "t" });
 }
 
@@ -41,7 +42,10 @@ describe("BridgeHub auth", () => {
     const hub = new BridgeHub({ token: TOKEN });
     const sock = paired(hub);
 
-    expect(sock.last()).toEqual({ type: "welcome", protocol: 1 });
+    expect(sock.last()).toEqual({
+      type: "welcome",
+      protocol: PROTOCOL_VERSION,
+    });
     expect(hub.connected).toBe(true);
     expect(sock.closed).toBeNull();
   });

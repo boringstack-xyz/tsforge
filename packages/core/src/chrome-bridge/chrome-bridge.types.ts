@@ -15,7 +15,8 @@ export type BridgeMethod =
   | "tabs.screenshot"
   | "page.read"
   | "page.click"
-  | "page.scroll";
+  | "page.scroll"
+  | "page.fetch";
 
 export type BridgeErrorCode =
   | "not_in_group"
@@ -127,6 +128,18 @@ export interface IClickResult {
   url: string;
 }
 
+/** A same-origin GET made inside a tsforge tab (site plugins only). The
+ *  extension refuses any other origin, any host outside its compiled-in list,
+ *  and non-text responses; `truncated` means the body hit the size cap. */
+export interface IFetchResult {
+  status: number;
+  contentType: string;
+  body: string;
+  truncated: boolean;
+  /** The response's Retry-After header, when it sent one (429 / 503). */
+  retryAfter?: string;
+}
+
 export interface IScreenshotResult {
   dataUrl: string;
 }
@@ -137,8 +150,9 @@ export type BridgeResult =
   { ok: true; result: unknown } | { ok: false; error: IBridgeError };
 
 /** `listening`: port bound, no extension yet. `connected`: extension paired.
- *  `in-use`: another tsforge process owns the port. */
-export type BridgeStatus = "listening" | "connected" | "in-use";
+ *  `outdated`: an extension connected but speaks an older protocol (needs a
+ *  rebuild + reload). `in-use`: another tsforge process owns the port. */
+export type BridgeStatus = "listening" | "connected" | "outdated" | "in-use";
 
 export interface IBrowserBridge {
   readonly port: number;

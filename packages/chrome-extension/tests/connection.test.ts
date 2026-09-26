@@ -5,6 +5,10 @@ import {
   type ConnectionStatus,
   type IWsLike,
 } from "../src/connection";
+import {
+  CLOSE_CODE,
+  PROTOCOL_VERSION,
+} from "../../core/src/chrome-bridge/chrome-bridge.constants";
 
 class FakeWs implements IWsLike {
   sent: any[] = [];
@@ -91,11 +95,11 @@ describe("Connection", () => {
     ws.onopen?.();
     expect(ws.sent[0]).toEqual({
       type: "hello",
-      protocol: 1,
+      protocol: PROTOCOL_VERSION,
       token: "tok",
       extVersion: "0.1.0",
     });
-    ws.serverSends({ type: "welcome", protocol: 1 });
+    ws.serverSends({ type: "welcome", protocol: PROTOCOL_VERSION });
     expect(h.statuses.at(-1)).toBe("connected");
     ws.serverSends({ type: "req", id: 5, method: "tabs.list", params: {} });
     await flush();
@@ -131,7 +135,7 @@ describe("Connection", () => {
     const ws = h.sockets[0]!;
 
     ws.onopen?.();
-    ws.serverSends({ type: "welcome", protocol: 1 });
+    ws.serverSends({ type: "welcome", protocol: PROTOCOL_VERSION });
     const ping = h.timers.find((t) => t.ms === 20_000)!;
 
     ping.fn();
@@ -162,6 +166,17 @@ describe("Connection", () => {
     h.conn.ensure();
     expect(h.sockets).toHaveLength(1);
     h.conn.configure({ token: "right", port: 1 });
+    expect(h.sockets).toHaveLength(2);
+  });
+
+  test("protocol mismatch (4002) shows outdated but keeps retrying", () => {
+    const h = harness();
+
+    h.conn.configure({ token: "tok", port: 1 });
+    h.sockets[0]!.onclose?.({ code: CLOSE_CODE.protocolMismatch });
+    expect(h.statuses.at(-1)).toBe("outdated");
+    // Not halted: updating tsforge (or the extension) reconnects on its own.
+    h.timers.at(-1)!.fn();
     expect(h.sockets).toHaveLength(2);
   });
 

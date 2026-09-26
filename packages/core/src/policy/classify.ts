@@ -102,6 +102,11 @@ const KIND_BY_TOOL: Readonly<Record<string, ActionKind>> = {
   [TOOL_NAME.browserScroll]: "network",
   [TOOL_NAME.browserScreenshot]: "network",
   [TOOL_NAME.browserClose]: "network",
+  // Site plugins read a site's data through the same browser → `network`.
+  [TOOL_NAME.redditSearch]: "network",
+  [TOOL_NAME.redditThread]: "network",
+  [TOOL_NAME.redditListing]: "network",
+  [TOOL_NAME.redditSubreddits]: "network",
   // `note` appends to notes/<topic>.md — a low-risk file write: allowed wherever
   // edits are, denied in plan mode.
   [TOOL_NAME.note]: "edit_file",

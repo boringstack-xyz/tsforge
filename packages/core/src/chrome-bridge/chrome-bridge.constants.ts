@@ -4,7 +4,7 @@ import type { BridgeMethod } from "./chrome-bridge.types";
 export const DEFAULT_BRIDGE_PORT = 47823;
 
 /** Bumped on any incompatible frame change; hello with another value → 4002. */
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 /** Fixed by the public `key` in packages/chrome-extension/static/manifest.json,
  *  so a load-unpacked install has this ID on every machine. The upgrade gate
@@ -36,6 +36,7 @@ export const METHOD_TIMEOUT_MS: Readonly<Record<BridgeMethod, number>> = {
   "page.read": 15_000,
   "page.click": 30_000,
   "page.scroll": 10_000,
+  "page.fetch": 20_000,
 };
 
 /** One `browser_read` chunk. Stays under the 8192-char history prune threshold

@@ -11,6 +11,7 @@ import type {
   BridgeMethod,
   ExtensionFrame,
   IClickResult,
+  IFetchResult,
   IPageSnapshot,
   IRefInfo,
   IScreenshotResult,
@@ -30,6 +31,7 @@ const METHODS: ReadonlySet<string> = new Set<BridgeMethod>([
   "page.read",
   "page.click",
   "page.scroll",
+  "page.fetch",
 ]);
 
 const ERROR_CODES: ReadonlySet<string> = new Set<BridgeErrorCode>([
@@ -293,4 +295,25 @@ export function parseScreenshot(value: unknown): IScreenshotResult | null {
     value.dataUrl.startsWith("data:image/")
     ? { dataUrl: value.dataUrl }
     : null;
+}
+
+export function parseFetchResult(value: unknown): IFetchResult | null {
+  if (
+    !isRecord(value) ||
+    !isInt(value.status) ||
+    typeof value.contentType !== "string" ||
+    typeof value.body !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    status: value.status,
+    contentType: value.contentType,
+    body: value.body,
+    truncated: value.truncated === true,
+    ...(typeof value.retryAfter === "string"
+      ? { retryAfter: value.retryAfter }
+      : {}),
+  };
 }

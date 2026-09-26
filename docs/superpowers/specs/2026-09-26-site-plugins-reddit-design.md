@@ -77,7 +77,8 @@ core  parse → render compact markdown → download images → chunk → agent
   Parsed at session start for duplicate detection that survives restarts.
 - `reddit/` — the Reddit plugin:
   - `reddit.constants.ts` (hosts `www.reddit.com`, `old.reddit.com`; media hosts
-    `i.redd.it`, `preview.redd.it`, `i.imgur.com`; limits)
+    `i.redd.it`, `preview.redd.it`, `external-preview.redd.it`, `i.imgur.com`;
+    limits)
   - `reddit.types.ts` (the subset of Reddit's listing/thing JSON we read)
   - `urls.ts` (post id/URL normalisation, search/listing/thread/morechildren URLs)
   - `parse.ts` (JSON → internal post/comment tree; guards, no `as`)
@@ -116,8 +117,10 @@ core  parse → render compact markdown → download images → chunk → agent
   - method GET, no custom headers, no body (the handler builds the request);
   - response content-type is JSON or text; body truncated/refused over 5 MB.
 - `PROTOCOL_VERSION` bumps to 2 (an old extension reports a mismatch instead of
-  silently lacking the method); the `/browser` report says to reload the
-  extension.
+  silently lacking the method). A new bridge status `outdated` makes `/browser`
+  and the boot chip say "rebuild + reload the extension"; the extension shows
+  the same in its options page and keeps retrying on its normal backoff, so
+  updating either side reconnects on its own.
 - Timeout for `page.fetch`: 20s.
 
 ### `note` tool: topic folders
