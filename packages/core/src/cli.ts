@@ -52,9 +52,11 @@ import {
 import { makeReporter, resolveLogPath, withLedger } from "./cli/logging";
 import { resolveGate } from "./cli/gate-setup";
 import {
+  findConfigUp,
   loadTsforgeConfig,
   resolveAgentConcurrency,
 } from "./config/tsforge-config";
+import { applySettings } from "./config/user-settings";
 import {
   makeAgentSummaryTracker,
   renderAgentTree,
@@ -829,6 +831,10 @@ export async function main(): Promise<number> {
   }
 
   const args = parseArgs(raw);
+
+  // ~/.tsforge/config.json + tsforge.config.json `settings`/`env` → process.env
+  // (real env wins), before anything reads a flag.
+  applySettings(process.env, await findConfigUp(args.dir));
 
   // `--version`/`--help` print and exit — before this fix an unknown flag fell
   // through as a POSITIONAL, so `tsforge --version` booted a session with the

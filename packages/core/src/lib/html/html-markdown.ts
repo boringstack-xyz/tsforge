@@ -3,12 +3,16 @@
  * jsdom + Mozilla Readability + Turndown, lazy-loaded so they cost nothing until
  * a page is actually read.
  */
-import type { JSDOM as JSDOMType } from "jsdom";
+import type {
+  JSDOM as JSDOMType,
+  VirtualConsole as VirtualConsoleType,
+} from "jsdom";
 import type { Readability as ReadabilityType } from "@mozilla/readability";
 import type TurndownService from "turndown";
 
 export interface IHtmlLibs {
   JSDOM: typeof JSDOMType;
+  VirtualConsole: typeof VirtualConsoleType;
   Readability: typeof ReadabilityType;
   Turndown: typeof TurndownService;
 }
@@ -22,11 +26,30 @@ export function loadHtmlLibs(): Promise<IHtmlLibs> {
     import("turndown"),
   ]).then(([jsdom, readability, turndown]) => ({
     JSDOM: jsdom.JSDOM,
+    VirtualConsole: jsdom.VirtualConsole,
     Readability: readability.Readability,
     Turndown: turndown.default,
   }));
 
   return libs;
+}
+
+/**
+ * Parse HTML into a document with jsdom's console SILENCED. By default jsdom
+ * reports page problems ("Could not parse CSS stylesheet", script errors) with
+ * console.error — straight onto the terminal, over the interactive UI, which
+ * scrolled the screen and left duplicated header rows behind. Page problems
+ * are not tsforge problems; a fresh VirtualConsole with no sink drops them.
+ */
+export function quietDocument(
+  libs: Pick<IHtmlLibs, "JSDOM" | "VirtualConsole">,
+  html: string,
+  url: string
+): Document {
+  return new libs.JSDOM(html, {
+    url,
+    virtualConsole: new libs.VirtualConsole(),
+  }).window.document;
 }
 
 export function stripTags(html: string): string {
@@ -45,10 +68,9 @@ export async function htmlToReadableMarkdown(
   url: string
 ): Promise<string> {
   try {
-    const { JSDOM, Readability, Turndown } = await loadHtmlLibs();
-
-    const dom = new JSDOM(html, { url });
-    const article = new Readability(dom.window.document).parse();
+    const libs = await loadHtmlLibs();
+    const { Readability, Turndown } = libs;
+    const article = new Readability(quietDocument(libs, html, url)).parse();
     const content = article?.content ?? "";
 
     if (content.length === 0) {

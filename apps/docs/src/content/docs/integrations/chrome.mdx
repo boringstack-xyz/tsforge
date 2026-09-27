@@ -39,7 +39,7 @@ Remaining risk: injected text could still ask the agent to *open* a URL that car
 3. Start tsforge with the bridge on, or flip **Chrome browser** in [`/config`](/cli/interactive/):
 
    ```bash
-   TSFORGE_BROWSER=1 tsforge
+   TSFORGE_BROWSER=1 tsforge   # once; or set "browser": true in ~/.tsforge/config.json (or toggle it in /config) and it sticks
    ```
 
    The boot chip reads `browser · waiting for the Chrome extension`.

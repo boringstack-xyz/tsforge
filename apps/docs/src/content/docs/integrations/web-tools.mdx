@@ -21,7 +21,7 @@ TSFORGE_WEB=1 tsforge "update the deprecated API call (check the library's curre
 
 `web_fetch` also takes a `topic`: the page is logged in `notes/<topic>/sources.md` and not read twice, and Reddit / Hacker News / Stack Exchange URLs are handed to their site tool. How research runs use all of this together: [Research sources](/integrations/research-sources/).
 
-SearXNG is **not bundled or started by tsforge**. If you run your own SearXNG service (Docker, Compose, or any deployment), point `TSFORGE_SEARXNG_URL` at it for full privacy/control:
+SearXNG is **not bundled or started by tsforge**. If you run your own SearXNG service (Docker, Compose, or any deployment), point tsforge at it once: `/config` → **Web search backend**, or `"settings": { "searxngUrl": "…" }` in `~/.tsforge/config.json` ([Settings file](/reference/flags/#settings-file-set-it-once)). For a single run the variable also works:
 
 ```bash
 TSFORGE_WEB=1 TSFORGE_SEARXNG_URL=http://localhost:8888 tsforge

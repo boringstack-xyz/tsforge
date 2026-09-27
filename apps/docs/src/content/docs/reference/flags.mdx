@@ -3,6 +3,37 @@ title: Environment variables
 description: Canonical list of every TSFORGE_* environment variable.
 ---
 
+## Settings file: set it once
+
+You don't have to pass these variables every time you start tsforge. Put them in **`~/.tsforge/config.json`**, which applies everywhere, or in a project's `tsforge.config.json` to override for that project:
+
+```json
+{
+  "settings": {
+    "browser": true,
+    "webTools": true,
+    "searxngUrl": "http://searx.lan",
+    "stackExchangeKey": "…",
+    "maxTurns": 0
+  },
+  "env": { "TSFORGE_TDD": "0" }
+}
+```
+
+| Setting | Variable it sets |
+| --- | --- |
+| `browser` | `TSFORGE_BROWSER` (Chrome research bridge) |
+| `browserPort` | `TSFORGE_BROWSER_PORT` |
+| `browserAllowPrivate` | `TSFORGE_BROWSER_ALLOW_PRIVATE` |
+| `webTools` | `TSFORGE_WEB` |
+| `searxngUrl` | `TSFORGE_SEARXNG_URL` |
+| `searchBackend` | `TSFORGE_WEB_SEARCH_BACKEND` |
+| `stackExchangeKey` | `TSFORGE_STACKEXCHANGE_KEY` |
+| `maxTurns` | `TSFORGE_MAX_TURNS` |
+| `compactAt` | `TSFORGE_COMPACT_AT` |
+
+`env` sets any other `TSFORGE_*` variable (other names are ignored). Order of precedence: a real environment variable beats the project file, which beats `~/.tsforge/config.json`. The `/config` toggles for web tools, Chrome and the SearXNG URL save to `~/.tsforge/config.json` for you.
+
 ## Behavior & tools: configure in `/config`
 
 Feature toggles are configured **inside the harness**, not through env vars. Run

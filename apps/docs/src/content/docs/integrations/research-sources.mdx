@@ -7,11 +7,13 @@ A research run keeps bouncing between search and sources: it finds something on 
 
 ## Search: your own SearXNG
 
-`web_search` uses DuckDuckGo by default. If you run [SearXNG](https://docs.searxng.org/), point tsforge at it. It queries Google, Bing and others and returns clean JSON, with no scraping and nothing tied to your Google account:
+`web_search` uses DuckDuckGo by default. If you run [SearXNG](https://docs.searxng.org/), point tsforge at it once. It queries Google, Bing and others and returns clean JSON, with no scraping and nothing tied to your Google account. Set it in `/config` → **Web search backend**, or in `~/.tsforge/config.json`:
 
-```bash
-export TSFORGE_SEARXNG_URL=http://searx.lan   # your instance; JSON output must be enabled
+```json
+{ "settings": { "searxngUrl": "http://searx.lan", "webTools": true, "browser": true } }
 ```
+
+(`TSFORGE_SEARXNG_URL` still works and wins for a single run. See [Settings file](/reference/flags/#settings-file-set-it-once).)
 
 In SearXNG's `settings.yml`, `search.formats` must include `json`. Keep the instance on your LAN: it has no login of its own.
 

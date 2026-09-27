@@ -8,7 +8,7 @@
  * picks the first post and silently drops every reply.
  */
 import type TurndownService from "turndown";
-import { loadHtmlLibs, type IHtmlLibs } from "../lib/html";
+import { loadHtmlLibs, quietDocument, type IHtmlLibs } from "../lib/html";
 import type { IPageSnapshot, IRefInfo } from "./chrome-bridge.types";
 
 export type ReadMode = "auto" | "article" | "full";
@@ -102,11 +102,12 @@ export async function renderSnapshot(
   mode: ReadMode,
   libs?: IHtmlLibs
 ): Promise<IRenderedPage> {
-  const { JSDOM, Readability, Turndown } = libs ?? (await loadHtmlLibs());
+  const htmlLibs = libs ?? (await loadHtmlLibs());
+  const { Readability, Turndown } = htmlLibs;
   const refs = new Map(snapshot.refs.map((r) => [r.ref, r]));
   const td = buildTurndown(Turndown, refs);
   const html = snapshot.html;
-  const fullDoc = new JSDOM(html, { url: snapshot.url }).window.document;
+  const fullDoc = quietDocument(htmlLibs, html, snapshot.url);
   const full = (): IRenderedPage => ({
     markdown: tidy(td.turndown(fullDoc.body)),
     mode: "full",
@@ -117,7 +118,7 @@ export async function renderSnapshot(
   }
 
   // Readability mutates its input — give it a separate document.
-  const articleDoc = new JSDOM(html, { url: snapshot.url }).window.document;
+  const articleDoc = quietDocument(htmlLibs, html, snapshot.url);
   const article = new Readability(articleDoc, { keepClasses: true }).parse();
   const content = article?.content ?? "";
 
