@@ -63,6 +63,10 @@ export const RESEARCH_TOOLS: ReadonlySet<string> = new Set([
   TOOL_NAME.redditThread,
   TOOL_NAME.redditListing,
   TOOL_NAME.redditSubreddits,
+  TOOL_NAME.hnSearch,
+  TOOL_NAME.hnThread,
+  TOOL_NAME.seSearch,
+  TOOL_NAME.seQuestion,
 ]);
 
 export function toolCallsDoResearch(

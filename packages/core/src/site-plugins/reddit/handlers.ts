@@ -53,7 +53,7 @@ const UNTRUSTED =
 export interface IRedditDeps {
   now: () => Date;
   fetchJson: (
-    session: IBrowserSession,
+    session: IBrowserSession | undefined,
     path: string
   ) => Promise<FetchOutcome<unknown>>;
   download: (cwd: string, req: IAssetRequest) => Promise<AssetResult>;
@@ -61,7 +61,17 @@ export interface IRedditDeps {
 
 const DEFAULT_DEPS: IRedditDeps = {
   now: () => new Date(),
-  fetchJson: (session, path) => pageFetchJson(session, REDDIT_HOST, path),
+  fetchJson: (session, path) =>
+    session === undefined
+      ? Promise.resolve({
+          ok: false,
+          failure: {
+            kind: "bridge",
+            message:
+              "the Chrome bridge is off (reddit_* reads through the user's browser)",
+          },
+        })
+      : pageFetchJson(session, REDDIT_HOST, path),
   download: (cwd, req) => downloadAsset(cwd, req, REDDIT_MEDIA_HOSTS),
 };
 
@@ -74,14 +84,14 @@ interface IRedditState {
   topics: Map<string, Set<string>>;
 }
 
-const STATE = new WeakMap<IBrowserSession, IRedditState>();
+const STATE = new WeakMap<object, IRedditState>();
 
-function stateOf(session: IBrowserSession): IRedditState {
-  let state = STATE.get(session);
+function stateOf(key: object): IRedditState {
+  let state = STATE.get(key);
 
   if (state === undefined) {
     state = { threads: new Map(), read: new Set(), topics: new Map() };
-    STATE.set(session, state);
+    STATE.set(key, state);
   }
 
   return state;
@@ -111,7 +121,7 @@ async function topicKeys(
     return new Set();
   }
 
-  const state = stateOf(ctx.session);
+  const state = stateOf(ctx.stateKey);
   const slug = slugifyTopic(topic);
   let keys = state.topics.get(slug);
 
@@ -129,7 +139,7 @@ async function isRead(
   id: string
 ): Promise<boolean> {
   return (
-    stateOf(ctx.session).read.has(id) ||
+    stateOf(ctx.stateKey).read.has(id) ||
     (await topicKeys(ctx, topic)).has(sourceKey(SITE, id))
   );
 }
@@ -354,7 +364,7 @@ export function createRedditHandlers(
       return "reddit_thread: `post` (an id or Reddit post URL) and `topic` (the notes folder) are required.";
     }
 
-    const state = stateOf(ctx.session);
+    const state = stateOf(ctx.stateKey);
     const chunk = typeof args.chunk === "number" ? Math.floor(args.chunk) : 1;
     const cached = state.threads.get(id);
     const force = args.force === true;

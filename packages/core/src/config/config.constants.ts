@@ -12,6 +12,8 @@ export const ENV_FLAG = {
   browserAllowPrivate: "TSFORGE_BROWSER_ALLOW_PRIVATE",
   // Per-send turn cap override for interactive sessions (0 = unlimited).
   maxTurns: "TSFORGE_MAX_TURNS",
+  // Optional Stack Exchange API key: 300 → 10,000 requests/day.
+  stackExchangeKey: "TSFORGE_STACKEXCHANGE_KEY",
   noScriptTool: "TSFORGE_NO_SCRIPT",
   noGitTool: "TSFORGE_NO_GIT_TOOL",
   noGithub: "TSFORGE_NO_GITHUB",

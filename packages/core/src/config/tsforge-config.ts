@@ -728,7 +728,7 @@ export function resolveAgentConcurrency(config: ITsforgeProjectConfig): number {
  *  This is why running from a subdirectory (e.g. the CLI's `--cwd packages/core`)
  *  still picks up the project's config — otherwise `agents.concurrency`, the
  *  profile, and policy would all silently fall back to defaults. */
-async function findConfigUp(startDir: string): Promise<string | null> {
+export async function findConfigUp(startDir: string): Promise<string | null> {
   let dir = startDir;
 
   for (;;) {

@@ -206,6 +206,7 @@ export default defineConfig({
             { label: "Web access", link: "/integrations/web-tools/" },
             { label: "Research in your Chrome", link: "/integrations/chrome/" },
             { label: "Research on Reddit", link: "/integrations/reddit/" },
+            { label: "Research sources", link: "/integrations/research-sources/" },
             { label: "Decision memory", link: "/integrations/decision-memory/" },
           ],
         },

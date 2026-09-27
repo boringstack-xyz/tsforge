@@ -9,3 +9,5 @@ export {
 } from "./page-fetch";
 export { readSources, recordSource, SOURCES_FILE } from "./sources-log";
 export { downloadAsset, assetUrlProblem, MAX_ASSET_BYTES } from "./assets";
+export { webKey, normaliseUrl } from "./web-key";
+export { isLogged, logSource, topicKeys, refusedRead } from "./reading";

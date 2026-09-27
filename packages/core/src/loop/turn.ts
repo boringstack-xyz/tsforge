@@ -349,9 +349,18 @@ export function browserTools(caps: ICapabilityFlags): AdvertisedTool[] {
     BROWSER_SCROLL_TOOL,
     ...(caps.vision === true ? [BROWSER_SCREENSHOT_TOOL] : []),
     BROWSER_CLOSE_TOOL,
-    // Site plugins (reddit_* …) ride the same bridge, so the same gate.
-    ...sitePluginTools(),
+    // Site plugins: browser ones (reddit_*) ride this bridge; direct ones
+    // (hn_*, se_*) come along too — the session can research.
+    ...sitePluginTools({ browser: true }),
   ];
+}
+
+/** Direct site plugins (hn_*, se_*) for a session that researches with the
+ *  web tools but not the Chrome bridge (with the bridge, browserTools has them). */
+function directSiteTools(caps: ICapabilityFlags): AdvertisedTool[] {
+  return caps.browser !== true && flags.webTools()
+    ? sitePluginTools({ web: true })
+    : [];
 }
 
 /** `note` — append-only research notes. Offered whenever the model can research
@@ -391,7 +400,11 @@ export function toolsFor(
   const sentry = sentryTools(caps);
   const script = scriptTools();
   const image = imageTools(caps);
-  const research = [...browserTools(caps), ...noteTools(caps)];
+  const research = [
+    ...browserTools(caps),
+    ...directSiteTools(caps),
+    ...noteTools(caps),
+  ];
 
   // check — the callable, structured acceptance gate. Offered ONLY when the caller
   // wires a `runCheck` seam on the tool context (the boringstack build does); a

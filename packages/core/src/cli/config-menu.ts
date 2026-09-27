@@ -83,6 +83,12 @@ export interface IConfigDeps {
   /** Start the Chrome research bridge now and advertise the browser tools
    *  (the `tools.browser` toggle). Absent ⇒ the toggle only flips the env flag. */
   readonly enableBrowser?: () => Promise<unknown>;
+  /** Persist a readable setting to ~/.tsforge/config.json so the change
+   *  survives restarts (undefined removes it). Absent ⇒ session-only. */
+  readonly saveSetting?: (
+    name: string,
+    value: boolean | string | number | undefined
+  ) => void;
   /** The inline menu view (pane overlay + close). */
   readonly view?: IConfigMenuView;
   /** Overlay width. Prefer main-pane inner cols when the pane console is live. */
@@ -156,6 +162,7 @@ const ENV = {
   web: "TSFORGE_WEB",
   tdd: "TSFORGE_TDD",
   browser: "TSFORGE_BROWSER",
+  searxng: "TSFORGE_SEARXNG_URL",
 };
 
 function onOff(on: boolean): string {
@@ -254,12 +261,28 @@ export function buildSettings(deps: IConfigDeps): ISetting[] {
       group: "Tools",
       label: "Web tools",
       describe:
-        "web_fetch + web_search (DuckDuckGo, no key). Applies to new turns this session.",
+        "web_fetch, web_search, hn_*, se_* (no keys needed). Applies to new turns now and is saved for future sessions.",
       read: () => onOff(deps.getEnv(ENV.web) === "1"),
       activate: () => {
         const on = deps.getEnv(ENV.web) === "1";
 
-        deps.setEnv(ENV.web, on ? undefined : "1");
+        deps.setEnv(ENV.web, on ? "0" : "1");
+        deps.saveSetting?.("webTools", !on);
+      },
+    },
+    {
+      id: "tools.searxng",
+      group: "Tools",
+      label: "Web search backend",
+      describe:
+        "Your SearXNG instance for web_search (Google-quality results as JSON), e.g. http://searx.lan. Empty = DuckDuckGo. Saved for future sessions.",
+      read: () => deps.getEnv(ENV.searxng) ?? "DuckDuckGo (default)",
+      fields: [{ key: "url", label: "SearXNG URL (empty = DuckDuckGo)" }],
+      applyText: (values) => {
+        const url = (values.url ?? "").trim();
+
+        deps.setEnv(ENV.searxng, url.length > 0 ? url : undefined);
+        deps.saveSetting?.("searxngUrl", url.length > 0 ? url : undefined);
       },
     },
     {
@@ -267,12 +290,13 @@ export function buildSettings(deps: IConfigDeps): ISetting[] {
       group: "Tools",
       label: "Chrome browser",
       describe:
-        "Let the agent read pages in your real, logged-in Chrome via the tsforge extension (read + navigate only). /browser shows pairing steps. Turning it off applies to the next session.",
+        "Let the agent read pages in your real, logged-in Chrome via the tsforge extension (read + navigate only). /browser shows pairing steps. Saved for future sessions; turning it off takes effect next session.",
       read: () => onOff(deps.getEnv(ENV.browser) === "1"),
       activate: () => {
         const on = deps.getEnv(ENV.browser) === "1";
 
         deps.setEnv(ENV.browser, on ? undefined : "1");
+        deps.saveSetting?.("browser", !on);
 
         if (!on) {
           void deps.enableBrowser?.();

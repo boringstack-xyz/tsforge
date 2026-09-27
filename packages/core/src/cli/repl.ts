@@ -153,6 +153,9 @@ import {
   observeEvents,
 } from "./logging";
 import { setMcpDiagnosticSink } from "../mcp";
+import { trace } from "../lib/trace";
+import { divertStrayConsole } from "./stray-console";
+import { saveUserSetting } from "../config/user-settings";
 import {
   setBootHeadline,
   addBootChip,
@@ -1084,6 +1087,17 @@ function installTerminalRestore(
       restore();
       process.removeAllListeners(sig);
       process.kill(process.pid, sig);
+    });
+  }
+}
+
+/** Libraries' console.error/warn (jsdom's "Could not parse CSS stylesheet")
+ *  must not paint over the interactive UI — see divertStrayConsole. Kept for
+ *  the whole session; the debug trace (TSFORGE_TRACE) still has them. */
+function quietStrayConsole(): void {
+  if (process.stdout.isTTY) {
+    divertStrayConsole((method, message) => {
+      trace(`console.${method}`, message);
     });
   }
 }
@@ -2988,6 +3002,13 @@ export async function repl(args: ICliArgs): Promise<number> {
         getEnv: (name) => process.env[name],
         setEnv,
         enableBrowser: () => session.enableBrowser(),
+        saveSetting: (name, value) => {
+          try {
+            saveUserSetting(name, value);
+          } catch (err) {
+            trace("config.save-setting", err);
+          }
+        },
         view: {
           render: (lines) => {
             chrome.setOverlay(lines);
@@ -3204,6 +3225,8 @@ export async function repl(args: ICliArgs): Promise<number> {
   // terminate the process without firing 'exit' (SIGTERM/SIGHUP). See
   // installTerminalRestore.
   installTerminalRestore(paneScreen, () => editorForExit);
+
+  quietStrayConsole();
 
   // Wipe the visible terminal. Pane console: clear scrollback + repaint. Pipes:
   // plain CSI wipe.

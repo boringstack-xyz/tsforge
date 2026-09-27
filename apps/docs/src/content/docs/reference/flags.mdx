@@ -3,6 +3,37 @@ title: Environment variables
 description: Canonical list of every TSFORGE_* environment variable.
 ---
 
+## Settings file: set it once
+
+You don't have to pass these variables every time you start tsforge. Put them in **`~/.tsforge/config.json`**, which applies everywhere, or in a project's `tsforge.config.json` to override for that project:
+
+```json
+{
+  "settings": {
+    "browser": true,
+    "webTools": true,
+    "searxngUrl": "http://searx.lan",
+    "stackExchangeKey": "…",
+    "maxTurns": 0
+  },
+  "env": { "TSFORGE_TDD": "0" }
+}
+```
+
+| Setting | Variable it sets |
+| --- | --- |
+| `browser` | `TSFORGE_BROWSER` (Chrome research bridge) |
+| `browserPort` | `TSFORGE_BROWSER_PORT` |
+| `browserAllowPrivate` | `TSFORGE_BROWSER_ALLOW_PRIVATE` |
+| `webTools` | `TSFORGE_WEB` |
+| `searxngUrl` | `TSFORGE_SEARXNG_URL` |
+| `searchBackend` | `TSFORGE_WEB_SEARCH_BACKEND` |
+| `stackExchangeKey` | `TSFORGE_STACKEXCHANGE_KEY` |
+| `maxTurns` | `TSFORGE_MAX_TURNS` |
+| `compactAt` | `TSFORGE_COMPACT_AT` |
+
+`env` sets any other `TSFORGE_*` variable (other names are ignored). Order of precedence: a real environment variable beats the project file, which beats `~/.tsforge/config.json`. The `/config` toggles for web tools, Chrome and the SearXNG URL save to `~/.tsforge/config.json` for you.
+
 ## Behavior & tools: configure in `/config`
 
 Feature toggles are configured **inside the harness**, not through env vars. Run
@@ -71,7 +102,8 @@ Opt-in, free, and no required service keys. Turn on **Web tools** in [`/config`]
 | Variable | Default | Toggles |
 | --- | --- | --- |
 | `TSFORGE_NPM_REGISTRY` | npm registry | registry used by `package_info` / `package_docs` |
-| `TSFORGE_SEARXNG_URL` | unset | route `web_search` to a SearXNG instance you already run (e.g. `http://localhost:8888`) |
+| `TSFORGE_SEARXNG_URL` | unset | route `web_search` to a SearXNG instance you already run (e.g. `http://searx.lan`) |
+| `TSFORGE_STACKEXCHANGE_KEY` | unset | Stack Exchange API key for `se_search` / `se_question`: raises the daily quota from 300 to 10,000 requests |
 | `TSFORGE_WEB_SEARCH_BACKEND` | auto | `duckduckgo` or `searxng`; `searxng` fails closed if no SearXNG URL is set |
 
 ## Chrome bridge

@@ -128,8 +128,8 @@ async function fetchOnce(
 }
 
 /** Classify one HTTP reply: done, retry after a delay, or a final failure. */
-function judge(
-  res: IFetchResult,
+export function judge(
+  res: Pick<IFetchResult, "status" | "body" | "retryAfter">,
   attempt: number
 ): { done: FetchOutcome<string> } | { retryIn: number } {
   if (res.status >= 200 && res.status < 300) {
@@ -249,6 +249,8 @@ export function describeFailure(
   switch (f.failure.kind) {
     case "bridge":
       return `${site}: the Chrome extension couldn't make the request (${f.failure.message}). If it says disconnected, the user needs Chrome open with the tsforge extension paired (/browser); if it mentions the protocol, the extension needs reloading.`;
+    case "network":
+      return `${site}: ${f.failure.message} — check the network, then retry.`;
     case "rate_limited":
       return `${site}: ${f.failure.message}. Save notes on what you have, then continue more slowly.`;
     case "http":

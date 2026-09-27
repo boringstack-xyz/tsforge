@@ -141,7 +141,7 @@ test("doWebSearch passes recency and domain scope to DuckDuckGo", async () => {
 test("doWebSearch rejects invalid recency and domains without touching the network", async () => {
   let called = false;
   const badRecency = await doWebSearch(
-    { query: "typescript", recency: "week" },
+    { query: "typescript", recency: "hour" },
     ctx(),
     deps({
       fetchFn: async () => {
