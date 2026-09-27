@@ -71,7 +71,8 @@ Opt-in, free, and no required service keys. Turn on **Web tools** in [`/config`]
 | Variable | Default | Toggles |
 | --- | --- | --- |
 | `TSFORGE_NPM_REGISTRY` | npm registry | registry used by `package_info` / `package_docs` |
-| `TSFORGE_SEARXNG_URL` | unset | route `web_search` to a SearXNG instance you already run (e.g. `http://localhost:8888`) |
+| `TSFORGE_SEARXNG_URL` | unset | route `web_search` to a SearXNG instance you already run (e.g. `http://searx.lan`) |
+| `TSFORGE_STACKEXCHANGE_KEY` | unset | Stack Exchange API key for `se_search` / `se_question`: raises the daily quota from 300 to 10,000 requests |
 | `TSFORGE_WEB_SEARCH_BACKEND` | auto | `duckduckgo` or `searxng`; `searxng` fails closed if no SearXNG URL is set |
 
 ## Chrome bridge

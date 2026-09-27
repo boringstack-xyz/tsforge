@@ -109,6 +109,11 @@ const KIND_BY_TOOL: Readonly<Record<string, ActionKind>> = {
   [TOOL_NAME.redditSubreddits]: "network",
   // Only writes the topic's sources.md ledger under notes/.
   [TOOL_NAME.redditMarkRead]: "edit_file",
+  // Direct plugins call public APIs → network, like web_fetch.
+  [TOOL_NAME.hnSearch]: "network",
+  [TOOL_NAME.hnThread]: "network",
+  [TOOL_NAME.seSearch]: "network",
+  [TOOL_NAME.seQuestion]: "network",
   // `note` appends to notes/<topic>.md — a low-risk file write: allowed wherever
   // edits are, denied in plan mode.
   [TOOL_NAME.note]: "edit_file",

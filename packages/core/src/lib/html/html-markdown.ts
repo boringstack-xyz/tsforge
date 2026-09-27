@@ -63,3 +63,19 @@ export async function htmlToReadableMarkdown(
     return stripTags(html);
   }
 }
+
+/** An HTML FRAGMENT (a comment, an answer body) → markdown, keeping links and
+ *  code blocks. Falls back to tag-stripping when the libs are unavailable. */
+export async function htmlFragmentToMarkdown(html: string): Promise<string> {
+  if (html.trim().length === 0) {
+    return "";
+  }
+
+  try {
+    const { Turndown } = await loadHtmlLibs();
+
+    return new Turndown({ codeBlockStyle: "fenced" }).turndown(html).trim();
+  } catch {
+    return stripTags(html);
+  }
+}

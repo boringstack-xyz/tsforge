@@ -112,6 +112,10 @@ const HANDLERS: Record<ToolName, ToolHandler> = {
   [TOOL_NAME.redditListing]: sitePluginTool(TOOL_NAME.redditListing),
   [TOOL_NAME.redditSubreddits]: sitePluginTool(TOOL_NAME.redditSubreddits),
   [TOOL_NAME.redditMarkRead]: sitePluginTool(TOOL_NAME.redditMarkRead),
+  [TOOL_NAME.hnSearch]: sitePluginTool(TOOL_NAME.hnSearch),
+  [TOOL_NAME.hnThread]: sitePluginTool(TOOL_NAME.hnThread),
+  [TOOL_NAME.seSearch]: sitePluginTool(TOOL_NAME.seSearch),
+  [TOOL_NAME.seQuestion]: sitePluginTool(TOOL_NAME.seQuestion),
   [TOOL_NAME.note]: (a, c) => doNote(a, c),
   [TOOL_NAME.append]: doAppend,
   // The script's stubs RPC back into executeTool — passed as `execute` here so

@@ -5,6 +5,7 @@
  * removed comments with no replies (kept as a stub when they have replies, so
  * the conversation under them still makes sense).
  */
+import { age } from "../format";
 import type { IExpandStats } from "./expand";
 import type {
   IRedditComment,
@@ -23,24 +24,7 @@ export type AssetLabels = ReadonlyMap<
   { rel: string } | { failed: string }
 >;
 
-export function age(createdUtc: number, now: Date): string {
-  const s = Math.max(0, Math.floor(now.getTime() / 1000 - createdUtc));
-  const steps: [number, string][] = [
-    [365 * 86_400, "y"],
-    [30 * 86_400, "mo"],
-    [86_400, "d"],
-    [3600, "h"],
-    [60, "m"],
-  ];
-
-  for (const [size, unit] of steps) {
-    if (s >= size) {
-      return `${String(Math.floor(s / size))}${unit}`;
-    }
-  }
-
-  return "now";
-}
+export { age };
 
 function clip(text: string, max: number): string {
   return text.length <= max ? text : `${text.slice(0, max)} […]`;

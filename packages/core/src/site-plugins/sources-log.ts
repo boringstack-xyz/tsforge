@@ -11,7 +11,7 @@ import { resolveNotesPath, slugifyTopic } from "../lib/notes/notes-path";
 
 export const SOURCES_FILE = "sources.md";
 
-const LINE_ID = /^- \[([a-z0-9-]+:[A-Za-z0-9_]+)\]/u;
+const LINE_ID = /^- \[([a-z0-9-]+:[A-Za-z0-9_.-]+)\]/u;
 
 export interface ISourceEntry {
   site: string;

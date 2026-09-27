@@ -1,0 +1,69 @@
+---
+title: Research sources
+description: "How a tsforge research run moves between search and sources cheaply: Google-quality results from your own SearXNG, each result routed to the reader that suits it, and built-in readers for Hacker News and Stack Exchange that read whole discussions from their official APIs."
+---
+
+A research run keeps bouncing between search and sources: it finds something on Reddit, searches the web for more, lands on a Hacker News thread or a Stack Exchange question, and goes back. tsforge makes each hop cheap.
+
+## Search: your own SearXNG
+
+`web_search` uses DuckDuckGo by default. If you run [SearXNG](https://docs.searxng.org/), point tsforge at it. It queries Google, Bing and others and returns clean JSON, with no scraping and nothing tied to your Google account:
+
+```bash
+export TSFORGE_SEARXNG_URL=http://searx.lan   # your instance; JSON output must be enabled
+```
+
+In SearXNG's `settings.yml`, `search.formats` must include `json`. Keep the instance on your LAN: it has no login of its own.
+
+Searching Google through your logged-in browser is deliberately not supported. Google blocks automated searches with CAPTCHAs, it would put your own Google account at risk, and its terms forbid it. SearXNG gets the same results without those problems.
+
+Two options help research runs:
+
+- `queries`: up to 5 phrasings in one call. Results are interleaved, so every phrasing's best hits come first, and duplicates are removed.
+- `topic`: results already read for that research topic are marked `already read`.
+
+## Every result names its reader
+
+Each search result ends with the tool that reads it best:
+
+```text
+1. Technical understanding of guitar hum and grounding - Reddit
+   https://www.reddit.com/r/audioengineering/comments/169qpf3/…
+   → reddit_thread post:"169qpf3"
+2. Validating pickup wiring - Music Stack Exchange
+   https://music.stackexchange.com/questions/7263/validating-pickup-wiring
+   → se_question question:"7263" site:"music"
+3. How do I fix a 60Hz hum on my guitar? - Quora
+   → web_fetch
+```
+
+`web_fetch` routes on its own, too. Give it a Reddit, Hacker News or Stack Exchange URL together with a `topic`, and the site's reader reads the whole discussion as clean text instead of scraping the page. Without a topic it fetches normally and adds a tip.
+
+## Hacker News
+
+These use Algolia's official HN API. No browser or key is needed.
+
+| Tool | What it does |
+| --- | --- |
+| `hn_search` | Stories (or comments) by relevance or date, optionally within a time window. One line each: id, points, comments, age, title, domain. |
+| `hn_thread` | The story plus its entire comment tree in one request, as nested markdown, in chunks. |
+
+## Stack Exchange
+
+These use the official Stack Exchange API. No browser is needed. Without a key you get 300 requests a day; set `TSFORGE_STACKEXCHANGE_KEY` for 10,000.
+
+| Tool | What it does |
+| --- | --- |
+| `se_search` | Questions on any site: `stackoverflow`, `superuser`, `askubuntu`, or any `<name>.stackexchange.com` such as `electronics`, `music` or `diy`. Can filter to questions with an accepted answer. |
+| `se_question` | The question and all its answers, the accepted one first, then by votes. Code blocks are kept. |
+
+tsforge honours the API's own request to slow down (`backoff`), and warns when the day's quota runs low.
+
+## Nothing is read twice
+
+Pass the same `topic` to every reader, including `web_fetch`. Each source (thread, question or web page) is logged in `notes/<topic>/sources.md`. Readers refuse a source that's already logged unless you pass `force: true`, and search marks it `already read`, so a run that restarts many times over days never repeats itself.
+
+## When they're available
+
+- Hacker News and Stack Exchange tools come with the **Web tools** (`/config`, or `TSFORGE_WEB=1`) or the [Chrome bridge](/integrations/chrome/).
+- The [Reddit](/integrations/reddit/) tools need the Chrome bridge, because they read through your logged-in browser.

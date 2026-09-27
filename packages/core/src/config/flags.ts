@@ -40,6 +40,9 @@ export const flags = {
    *  Off by default so injected page text can't aim the logged-in browser at a
    *  router, an internal service, or the bridge itself. */
   browserAllowPrivate: (): boolean => isOn(ENV_FLAG.browserAllowPrivate),
+  /** Stack Exchange API key (optional; raises the daily quota). "" when unset. */
+  stackExchangeKey: (): string =>
+    process.env[ENV_FLAG.stackExchangeKey]?.trim() ?? "",
   /** Per-send turn cap override: a positive integer caps every send, `0` means
    *  unlimited; unset/invalid → undefined (the session picks its default). */
   maxTurns: (): number | undefined => {

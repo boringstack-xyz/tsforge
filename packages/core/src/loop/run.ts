@@ -73,7 +73,10 @@ import { resolveNotionCapability } from "./tools/notion-ops";
 import { resolveSentryCapability } from "./tools/sentry-ops";
 import { connectMcpServers, mergeMcpServers } from "../mcp";
 import { openBrowserSession } from "../chrome-bridge";
-import { BROWSER_RESEARCH_GUIDANCE } from "../agent/agent.constants";
+import {
+  BROWSER_RESEARCH_GUIDANCE,
+  SOURCES_GUIDANCE,
+} from "../agent/agent.constants";
 import { sitePluginGuidance } from "../site-plugins";
 import type { IMcpServerConfig } from "../mcp";
 import { loadGlobalMcpServers } from "../models-config";
@@ -1434,11 +1437,16 @@ export async function runTask(
   const tools = toolsFor(hasExistingCode, caps);
   const system = messages[0];
 
-  if (browserOn && system !== undefined) {
+  const webOn = flags.webTools();
+
+  if ((browserOn || webOn) && system !== undefined) {
     system.content = [
       system.content,
-      BROWSER_RESEARCH_GUIDANCE,
-      ...sitePluginGuidance().map((g) => g.text),
+      ...(browserOn ? [BROWSER_RESEARCH_GUIDANCE] : []),
+      SOURCES_GUIDANCE,
+      ...sitePluginGuidance({ browser: browserOn, web: webOn }).map(
+        (g) => g.text
+      ),
     ].join("\n\n");
   }
 

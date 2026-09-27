@@ -57,6 +57,10 @@ export const TOOL_NAME = {
   redditListing: "reddit_listing",
   redditSubreddits: "reddit_subreddits",
   redditMarkRead: "reddit_mark_read",
+  hnSearch: "hn_search",
+  hnThread: "hn_thread",
+  seSearch: "se_search",
+  seQuestion: "se_question",
   note: "note",
   append: "append",
   script: "script",
@@ -164,6 +168,10 @@ export const TOOL_SPECS: Readonly<Record<ToolName, IToolSpec>> = {
   [TOOL_NAME.redditListing]: { readOnly: true, scriptExposable: false },
   [TOOL_NAME.redditSubreddits]: { readOnly: true, scriptExposable: false },
   [TOOL_NAME.redditMarkRead]: { readOnly: false, scriptExposable: false },
+  [TOOL_NAME.hnSearch]: { readOnly: true, scriptExposable: false },
+  [TOOL_NAME.hnThread]: { readOnly: true, scriptExposable: false },
+  [TOOL_NAME.seSearch]: { readOnly: true, scriptExposable: false },
+  [TOOL_NAME.seQuestion]: { readOnly: true, scriptExposable: false },
   // `note` appends to ./notes/<topic>.md — a disk write (withheld in plan mode),
   // but outside the code scope/write-guard: notes are research output, not code.
   [TOOL_NAME.note]: { readOnly: false, scriptExposable: false },
@@ -352,7 +360,7 @@ export const WEB_FETCH_TOOL = {
   function: {
     name: TOOL_NAME.webFetch,
     description:
-      "Fetch a public web page and get its main content back as readable markdown. Use it to READ a known URL — docs, a GitHub issue, an RFC, an API reference — instead of guessing. Give the absolute http(s) URL; returns the extracted article text (truncated — pass `maxChars` for more). Runs locally on the user's machine; no external API or key.",
+      "Fetch a public web page and get its main content back as readable markdown. Use it to READ a known URL — docs, a GitHub issue, an RFC, an API reference — instead of guessing. Give the absolute http(s) URL; returns the extracted article text (truncated — pass `maxChars` for more). Runs locally on the user's machine; no external API or key. During research pass `topic`: the page is logged in notes/<topic>/sources.md and not read twice, and a Reddit / Hacker News / Stack Exchange URL is read by its site tool instead (the whole discussion, as clean text).",
     parameters: {
       type: "object",
       properties: {
@@ -360,6 +368,15 @@ export const WEB_FETCH_TOOL = {
         maxChars: {
           type: "number",
           description: "optional cap on returned characters (default 8000)",
+        },
+        topic: {
+          type: "string",
+          description:
+            "research notes folder: log this source and skip it if already read",
+        },
+        force: {
+          type: "boolean",
+          description: "re-read a source already logged for the topic",
         },
       },
       required: ["url"],
@@ -372,14 +389,25 @@ export const WEB_SEARCH_TOOL = {
   function: {
     name: TOOL_NAME.webSearch,
     description:
-      "Search the web and get back ranked public result titles, URLs, and snippets. Use it to DISCOVER current sources when you don't already have a URL, then `web_fetch` the most relevant one. Supports `recency` for fresh docs/news, `domains` for official-site scoping, and `maxResults` for broader source discovery. Free and keyless — DuckDuckGo by default, or a user-run SearXNG instance via TSFORGE_SEARXNG_URL. Set TSFORGE_WEB_SEARCH_BACKEND=searxng to fail closed instead of falling back to DuckDuckGo.",
+      "Search the web and get back ranked public result titles, URLs, and snippets. Use it to DISCOVER current sources when you don't already have a URL. Each result ends with the tool that reads it best (→ reddit_thread / hn_thread / se_question / web_fetch) and '· already read' when the research `topic` already logged it. Pass several phrasings at once in `queries` (merged, deduplicated). Supports `recency` for fresh docs/news, `domains` for site scoping (e.g. reddit.com, news.ycombinator.com, stackexchange.com), and `maxResults` for broader source discovery. Free and keyless — DuckDuckGo by default, or a user-run SearXNG instance via TSFORGE_SEARXNG_URL. Set TSFORGE_WEB_SEARCH_BACKEND=searxng to fail closed instead of falling back to DuckDuckGo.",
     parameters: {
       type: "object",
       properties: {
         query: { type: "string", description: "the search query" },
+        queries: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "up to 5 phrasings searched in one call (in addition to or instead of `query`)",
+        },
+        topic: {
+          type: "string",
+          description:
+            "research notes folder: flag results already read for this topic",
+        },
         recency: {
           type: "string",
-          enum: ["day", "month", "year"],
+          enum: ["day", "week", "month", "year"],
           description:
             "optional freshness window for fast-moving topics and current docs",
         },
@@ -395,7 +423,7 @@ export const WEB_SEARCH_TOOL = {
             "optional result cap (default 8, maximum 20) when comparing multiple sources",
         },
       },
-      required: ["query"],
+      required: [],
     },
   },
 };
@@ -641,6 +669,16 @@ export const APPEND_TOOL = {
     },
   },
 };
+
+/** A stable marker so the sources playbook is appended once. */
+export const SOURCES_MARKER = "## Finding and reading sources";
+
+/** How to move between search and sources cheaply — appended whenever the
+ *  session can research (web tools or the Chrome bridge). */
+export const SOURCES_GUIDANCE = `${SOURCES_MARKER}
+- Search with web_search: several phrasings in \`queries\` at once, and the research \`topic\` so results already read are flagged. Each result names the tool that reads it best — use that tool: reddit_thread / hn_thread / se_question read whole discussions as clean text; web_fetch reads everything else.
+- Pass the same \`topic\` to every reader (web_fetch too): each source is logged in notes/<topic>/sources.md and never read twice, even after a restart.
+- Go where the answers are: hn_search for developer/tech/startup opinion, se_search (electronics, music, diy, superuser, stackoverflow …) for concrete problems and accepted fixes, Reddit for user experiences.`;
 
 /** A stable marker so the browser guidance is appended to the system prompt once. */
 export const BROWSER_MARKER = "## Researching in the user's browser";

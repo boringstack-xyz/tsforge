@@ -1,3 +1,13 @@
+import {
+  findSiteTool,
+  isLogged,
+  logSource,
+  refusedRead,
+  routeUrl,
+  webKey,
+  type ISiteRoute,
+} from "../../site-plugins";
+import { sitePluginContext, workspaceKey } from "./site-plugin-tools";
 import { reject, str, type IToolContext } from "./tool-context";
 import { htmlToReadableMarkdown } from "../../lib/html";
 import {
@@ -71,6 +81,26 @@ export async function doWebFetch(
     );
   }
 
+  const topic = str(args, "topic").trim();
+  const route = routeUrl(url.href);
+  const delegated =
+    topic.length > 0 && route !== null
+      ? await delegateToPlugin(route, topic, args, ctx)
+      : null;
+
+  if (delegated !== null) {
+    return delegated;
+  }
+
+  const refused =
+    topic.length > 0 && route === null
+      ? await refuseReRead(url.href, topic, args, ctx)
+      : null;
+
+  if (refused !== null) {
+    return refused;
+  }
+
   ctx.report({
     kind: "tool",
     task: ctx.task,
@@ -106,7 +136,84 @@ export async function doWebFetch(
     return `web_fetch: fetched ${url.href} but failed to extract readable content — ${msg}`;
   }
 
-  return truncate(content, maxChars(args));
+  if (topic.length > 0 && route === null) {
+    await logPage(url.href, content, topic, ctx);
+  }
+
+  const tip =
+    route !== null && topic.length === 0
+      ? `\n\n(Tip: ${route.hint} reads this as clean structured data — pass topic to log it.)`
+      : "";
+
+  return `${truncate(content, maxChars(args))}${tip}`;
+}
+
+/** A URL a site plugin owns, with a topic: call the plugin's reader instead of
+ *  scraping the page. Null when the plugin can't run here (e.g. a browser
+ *  plugin without the Chrome bridge) — then the page is fetched as usual. */
+async function delegateToPlugin(
+  route: ISiteRoute,
+  topic: string,
+  args: Record<string, unknown>,
+  ctx: IToolContext
+): Promise<string | null> {
+  const found = findSiteTool(route.tool);
+  const pluginCtx =
+    found === undefined ? null : sitePluginContext(ctx, found.plugin.transport);
+
+  if (
+    found === undefined ||
+    pluginCtx === null ||
+    typeof pluginCtx === "string"
+  ) {
+    return null;
+  }
+
+  return found.handler(
+    { ...route.args, topic, force: args.force === true },
+    pluginCtx
+  );
+}
+
+function stateKeyOf(ctx: IToolContext): object {
+  return ctx.browser ?? workspaceKey(ctx.cwd);
+}
+
+async function refuseReRead(
+  href: string,
+  topic: string,
+  args: Record<string, unknown>,
+  ctx: IToolContext
+): Promise<string | null> {
+  const logged =
+    args.force !== true &&
+    (await isLogged(stateKeyOf(ctx), ctx.cwd, topic, webKey(href)));
+
+  return logged ? refusedRead("web_fetch", href, topic) : null;
+}
+
+/** Log a page read for a topic: its title (the extract's first heading) and URL. */
+async function logPage(
+  href: string,
+  content: string,
+  topic: string,
+  ctx: IToolContext
+): Promise<void> {
+  const heading = /^#\s+(.+)$/mu.exec(content)?.[1]?.trim();
+
+  await logSource(
+    stateKeyOf(ctx),
+    ctx.cwd,
+    topic,
+    {
+      site: "web",
+      id: webKey(href).slice("web:".length),
+      title: heading !== undefined && heading.length > 0 ? heading : href,
+      url: href,
+      meta: `${String(content.length)} chars`,
+    },
+    new Date()
+  );
 }
 
 /** Max redirect hops followed before giving up. */

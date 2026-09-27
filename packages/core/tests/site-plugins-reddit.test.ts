@@ -319,6 +319,13 @@ function session(): IBrowserSession {
   };
 }
 
+/** A browser session used as both the session and the plugin state key. */
+function sess(): { session: IBrowserSession; stateKey: object } {
+  const s = session();
+
+  return { session: s, stateKey: s };
+}
+
 function deps(f = fakeFetcher()): IRedditDeps & { downloads: string[] } {
   const downloads: string[] = [];
 
@@ -344,7 +351,7 @@ describe("handlers", () => {
     const cwd = await tempDir();
     const d = deps();
     const h = createRedditHandlers(d);
-    const ctx = { session: session(), cwd, progress: () => undefined };
+    const ctx = { ...sess(), cwd, progress: () => undefined };
     const out = await h.reddit_thread?.(
       {
         post: "https://www.reddit.com/r/Guitar/comments/p1/x/",
@@ -382,7 +389,7 @@ describe("handlers", () => {
         : f.fetch(path);
 
     const h = createRedditHandlers(d);
-    const ctx = { session: session(), cwd, progress: () => undefined };
+    const ctx = { ...sess(), cwd, progress: () => undefined };
 
     await h.reddit_thread?.({ post: "p1", topic: "t" }, ctx);
     await h.reddit_thread?.({ post: "p1", topic: "t" }, ctx);
@@ -403,7 +410,7 @@ describe("handlers", () => {
 
     await first.reddit_thread?.(
       { post: "p1", topic: "t" },
-      { session: session(), cwd, progress: () => undefined }
+      { ...sess(), cwd, progress: () => undefined }
     );
 
     const d = deps(f);
@@ -413,7 +420,7 @@ describe("handlers", () => {
     const fresh = createRedditHandlers(d);
     const out = await fresh.reddit_search?.(
       { query: "x", topic: "t" },
-      { session: session(), cwd, progress: () => undefined }
+      { ...sess(), cwd, progress: () => undefined }
     );
 
     expect(out).toMatch(/- p1 .* already read/u);
@@ -423,7 +430,7 @@ describe("handlers", () => {
     const cwd = await tempDir();
     const f = fakeFetcher();
     const h = createRedditHandlers(deps(f));
-    const ctx = { session: session(), cwd, progress: () => undefined };
+    const ctx = { ...sess(), cwd, progress: () => undefined };
 
     await h.reddit_thread?.({ post: "p1", topic: "t", maxComments: 2000 }, ctx);
 
@@ -443,7 +450,7 @@ describe("handlers", () => {
 
     const h = createRedditHandlers(d);
     const ctx = {
-      session: session(),
+      ...sess(),
       cwd: await tempDir(),
       progress: () => undefined,
     };
@@ -466,7 +473,7 @@ describe("handlers", () => {
 
     const out = await createRedditHandlers(d).reddit_subreddits?.(
       { query: "guitar" },
-      { session: session(), cwd: await tempDir(), progress: () => undefined }
+      { ...sess(), cwd: await tempDir(), progress: () => undefined }
     );
 
     expect(out).toContain("- r/Guitar · 3,100,000 members — All things guitar");
@@ -480,11 +487,11 @@ describe("long crawls", () => {
 
     await createRedditHandlers(deps(f)).reddit_thread?.(
       { post: "p1", topic: "t" },
-      { session: session(), cwd, progress: () => undefined }
+      { ...sess(), cwd, progress: () => undefined }
     );
 
     const fresh = createRedditHandlers(deps(f));
-    const ctx = { session: session(), cwd, progress: () => undefined };
+    const ctx = { ...sess(), cwd, progress: () => undefined };
     const before = f.paths.length;
 
     expect(
@@ -501,7 +508,7 @@ describe("long crawls", () => {
     const cwd = await tempDir();
     const d = deps();
     const h = createRedditHandlers(d);
-    const ctx = { session: session(), cwd, progress: () => undefined };
+    const ctx = { ...sess(), cwd, progress: () => undefined };
     const out = await h.reddit_mark_read?.(
       {
         topic: "t",
@@ -553,7 +560,7 @@ describe("long crawls", () => {
 
     const out = await createRedditHandlers(d).reddit_thread?.(
       { post: "p1", topic: "t" },
-      { session: session(), cwd, progress: () => undefined }
+      { ...sess(), cwd, progress: () => undefined }
     );
 
     // 1 post image + 10 comment images downloaded; the rest stay links.

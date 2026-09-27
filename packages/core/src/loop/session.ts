@@ -54,6 +54,8 @@ import {
   SENTRY_MARKER,
   SENTRY_DRIVE_GUIDANCE,
   BROWSER_MARKER,
+  SOURCES_GUIDANCE,
+  SOURCES_MARKER,
   BROWSER_RESEARCH_GUIDANCE,
   NOTE_TOOL,
   APPEND_TOOL,
@@ -1871,6 +1873,8 @@ export class Session {
     // between the config and the live gate state, is corrected before turn 1.
     session.syncGateMode();
 
+    session.guideWebResearch();
+
     session.decisionMemory = decisionMemory;
     session.autoRetain = projectConfig.providers?.memory?.autoRetain !== false;
 
@@ -2817,12 +2821,28 @@ export class Session {
       APPEND_TOOL,
     ]);
     this.guideOnce(BROWSER_MARKER, BROWSER_RESEARCH_GUIDANCE);
+    this.guideOnce(SOURCES_MARKER, SOURCES_GUIDANCE);
 
-    for (const g of sitePluginGuidance()) {
+    for (const g of sitePluginGuidance({ browser: true })) {
       this.guideOnce(g.marker, g.text);
     }
 
     return status;
+  }
+
+  /** Web-tools research without the Chrome bridge still gets the direct site
+   *  plugins (hn_*, se_*): say how to use them. The bridge path does this in
+   *  setBrowserCapability. */
+  private guideWebResearch(): void {
+    if (!flags.webTools()) {
+      return;
+    }
+
+    this.guideOnce(SOURCES_MARKER, SOURCES_GUIDANCE);
+
+    for (const g of sitePluginGuidance({ web: true })) {
+      this.guideOnce(g.marker, g.text);
+    }
   }
 
   /** Turn the Chrome bridge on mid-session (the /config toggle). */

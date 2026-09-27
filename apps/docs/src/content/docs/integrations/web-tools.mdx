@@ -15,7 +15,11 @@ TSFORGE_WEB=1 tsforge "update the deprecated API call (check the library's curre
 - **`package_docs`**: read package docs without a docs API. Local `node_modules` README/package metadata/types first, then the npm registry README when needed.
 - **`web_fetch`**: retrieve a URL and return readable markdown. The page is fetched and the content extracted **on-machine** (no third-party reader API), so you get clean text without shipping the URL to a service.
 - **`web_browse`**: open a public URL in local headless Chromium via Playwright and return rendered visible text, final URL, title, and links. Use it for JavaScript-rendered docs that `web_fetch` cannot see. No hosted browser service.
-- **`web_search`**: discover sources for a query. It returns public result URLs only, supports `recency` (`day`, `month`, `year`), `domains` for official-site scoping, and `maxResults` up to 20. Defaults to DuckDuckGo's keyless HTML endpoint.
+- **`web_search`**: discover sources for a query. It returns public result URLs only, supports `queries` (up to 5 phrasings in one call), `recency` (`day`, `week`, `month`, `year`), `domains` for site scoping, `maxResults` up to 20, and `topic` to flag results already read. Each result names the tool that reads it best. Defaults to DuckDuckGo's keyless HTML endpoint.
+- **`hn_search` / `hn_thread`**: Hacker News through Algolia's official API. Search, then read a whole discussion in one request.
+- **`se_search` / `se_question`**: Stack Exchange through its official API. Search any site, then read a question with all its answers.
+
+`web_fetch` also takes a `topic`: the page is logged in `notes/<topic>/sources.md` and not read twice, and Reddit / Hacker News / Stack Exchange URLs are handed to their site tool. How research runs use all of this together: [Research sources](/integrations/research-sources/).
 
 SearXNG is **not bundled or started by tsforge**. If you run your own SearXNG service (Docker, Compose, or any deployment), point `TSFORGE_SEARXNG_URL` at it for full privacy/control:
 
@@ -38,6 +42,7 @@ The tools are read-only and offline-safe. Interactive sessions enable them by de
 | `TSFORGE_WEB` | on interactive, off one-shot/eval | force keyless research tools on (`=1`) or off (`=0`) |
 | `TSFORGE_NPM_REGISTRY` | npm registry | registry used by `package_info` / `package_docs` |
 | `TSFORGE_SEARXNG_URL` | unset | route `web_search` to a SearXNG instance you already run |
+| `TSFORGE_STACKEXCHANGE_KEY` | unset | Stack Exchange API key: 300 → 10,000 requests/day for `se_*` |
 | `TSFORGE_WEB_SEARCH_BACKEND` | auto | `duckduckgo` or `searxng`; `searxng` fails closed if no SearXNG URL is set |
 
 → [Environment variables](/reference/flags/) · [MCP servers](/integrations/mcp/) · [Permissions & policy](/guardrails/policy/)

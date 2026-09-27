@@ -222,10 +222,10 @@ describe("reddit research over the real bridge", () => {
 
     const reddit = createRedditHandlers({
       now: () => new Date(NOW_UTC * 1000),
-      fetchJson: (s, path) => pageFetchJson(s, "www.reddit.com", path),
+      fetchJson: (_s, path) => pageFetchJson(session, "www.reddit.com", path),
       download: async () => ({ ok: false, reason: "offline test" }),
     });
-    const ctx = { session, cwd, progress: () => undefined };
+    const ctx = { session, stateKey: session, cwd, progress: () => undefined };
 
     const search = await reddit.reddit_search?.(
       { query: "jimmy page wiring", topic: "wiring" },

@@ -40,7 +40,7 @@ Built-in only: a plugin fetches with the user's cookies, so it ships in tsforge'
 | 3. Name its tools | `TOOL_NAME` + `TOOL_SPECS` in `agent/agent.constants.ts`, `HANDLERS` via `sitePluginTool()` in `loop/tools/execute-tool.ts`, `network` in `policy/classify.ts`, `RESEARCH_TOOLS` in `loop/readonly-spin.ts` |
 | 4. Allow its hosts | `FETCH_HOSTS` in `packages/chrome-extension/src/fetch-policy.ts` (a test fails until it matches the registry) |
 
-The plugin's tools are advertised with the browser tools, and its guidance is appended once when the browser capability turns on.
+Pick the plugin's `transport`. A `browser` plugin (Reddit) reads through `page.fetch` in the user's tab and is offered only with the Chrome bridge; its hosts go in `FETCH_HOSTS`. A `direct` plugin (Hacker News, Stack Exchange) calls a public JSON API with `directFetchJson` and is offered whenever the session can research. Give it a `route(url)` so `web_search` hints and `web_fetch` delegation know which URLs it owns, and log reads through `site-plugins/reading.ts` so `sources.md` dedupes them.
 
 ### A new CLI command
 

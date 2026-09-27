@@ -1,6 +1,7 @@
 import { isRecord, isArray } from "../../lib/guards";
 import { reject, str, type IToolContext } from "./tool-context";
 import { validateFetchUrl } from "./web-fetch";
+import { readSources, routeUrl, webKey } from "../../site-plugins";
 
 /** DuckDuckGo's no-JS HTML endpoint — free, keyless, and returns plain markup we
  *  can parse. The default backend so web search works out of the box with zero
@@ -11,8 +12,10 @@ const DDG_ENDPOINT = "https://html.duckduckgo.com/html/";
 const DEFAULT_MAX_RESULTS = 8;
 const MAX_ALLOWED_RESULTS = 20;
 const MAX_DOMAINS = 5;
+/** Queries per call — several phrasings in one turn, merged and deduplicated. */
+const MAX_QUERIES = 5;
 
-export type WebSearchRecency = "day" | "month" | "year";
+export type WebSearchRecency = "day" | "week" | "month" | "year";
 type WebSearchBackend = "duckduckgo" | "searxng";
 
 export interface ISearchResult {
@@ -32,11 +35,49 @@ export interface IWebSearchDeps {
 }
 
 function parseRecency(value: unknown): WebSearchRecency | null {
-  if (value === "day" || value === "month" || value === "year") {
+  if (
+    value === "day" ||
+    value === "week" ||
+    value === "month" ||
+    value === "year"
+  ) {
     return value;
   }
 
   return null;
+}
+
+/** `queries` (up to MAX_QUERIES) plus `query`, trimmed and deduplicated. */
+function queriesArg(args: Record<string, unknown>): string[] {
+  const list = isArray(args.queries) ? args.queries : [];
+  const all = [
+    str(args, "query"),
+    ...list.filter((q): q is string => typeof q === "string"),
+  ];
+
+  return [
+    ...new Set(all.map((q) => q.trim()).filter((q) => q.length > 0)),
+  ].slice(0, MAX_QUERIES);
+}
+
+/** Round-robin merge so every phrasing contributes its best results first. */
+export function mergeRoundRobin(
+  lists: readonly (readonly ISearchResult[])[]
+): ISearchResult[] {
+  const out: ISearchResult[] = [];
+  const longest = Math.max(0, ...lists.map((l) => l.length));
+
+  for (let i = 0; i < longest; i += 1) {
+    for (const list of lists) {
+      const item = list[i];
+
+      if (item !== undefined) {
+        out.push(item);
+      }
+    }
+  }
+
+  return out;
 }
 
 function recencyArg(args: Record<string, unknown>): WebSearchRecency | null {
@@ -264,7 +305,8 @@ export function filterPublicResults(
 
 export function formatResults(
   results: readonly ISearchResult[],
-  limit: number = DEFAULT_MAX_RESULTS
+  limit: number = DEFAULT_MAX_RESULTS,
+  annotate: (r: ISearchResult) => string = () => ""
 ): string {
   if (results.length === 0) {
     return "no results found.";
@@ -275,15 +317,30 @@ export function formatResults(
     .map((r, i) => {
       const head = r.title.length > 0 ? r.title : r.url;
       const snip = r.snippet.length > 0 ? `\n   ${r.snippet}` : "";
+      const note = annotate(r);
 
-      return `${String(i + 1)}. ${head}\n   ${r.url}${snip}`;
+      return `${String(i + 1)}. ${head}\n   ${r.url}${snip}${note.length > 0 ? `\n   ${note}` : ""}`;
     })
     .join("\n\n");
+}
+
+/** "→ reddit_thread post:\"abc\"" / "→ web_fetch", plus "· already read"
+ *  when the result's source key is logged for the topic. */
+export function readerNote(url: string, logged: ReadonlySet<string>): string {
+  const route = routeUrl(url);
+  const key = route?.key ?? webKey(url);
+  const read = logged.has(key) ? " · already read" : "";
+
+  return `→ ${route?.hint ?? "web_fetch"}${read}`;
 }
 
 function ddgRecencyParam(recency: WebSearchRecency | null): string | null {
   if (recency === "day") {
     return "d";
+  }
+
+  if (recency === "week") {
+    return "w";
   }
 
   if (recency === "month") {
@@ -391,13 +448,13 @@ export async function doWebSearch(
   ctx: IToolContext,
   deps: IWebSearchDeps = DEFAULT_DEPS
 ): Promise<string> {
-  const query = str(args, "query").trim();
+  const queries = queriesArg(args);
 
-  if (query.length === 0) {
+  if (queries.length === 0) {
     return reject(
       ctx,
       "web_search",
-      "web_search: `query` must be a non-empty search string."
+      "web_search: `query` (or `queries`) must be a non-empty search string."
     );
   }
 
@@ -409,7 +466,7 @@ export async function doWebSearch(
     return reject(
       ctx,
       "web_search",
-      "web_search: `recency` must be one of `day`, `month`, or `year`."
+      "web_search: `recency` must be one of `day`, `week`, `month`, or `year`."
     );
   }
 
@@ -424,6 +481,48 @@ export async function doWebSearch(
   }
 
   const recency = recencyArg(args);
+  const lists: ISearchResult[][] = [];
+  const failures: string[] = [];
+
+  for (const query of queries) {
+    const got = await searchOnce(query, domains, recency, ctx, deps);
+
+    if (typeof got === "string") {
+      failures.push(got);
+    } else {
+      lists.push(got);
+    }
+  }
+
+  if (lists.length === 0) {
+    return failures[0] ?? "web_search: no results.";
+  }
+
+  const topic = str(args, "topic").trim();
+  const logged =
+    topic.length > 0 ? await readSources(ctx.cwd, topic) : new Set<string>();
+  const limit = maxResults(args) * Math.max(1, Math.min(lists.length, 2));
+  const text = formatResults(
+    filterPublicResults(mergeRoundRobin(lists)),
+    limit,
+    (r) => readerNote(r.url, logged)
+  );
+  const failed =
+    failures.length > 0
+      ? `\n\n(${String(failures.length)} of ${String(queries.length)} queries failed: ${failures[0] ?? ""})`
+      : "";
+
+  return `${text}${failed}`;
+}
+
+/** One backend query → results, or an error string. */
+async function searchOnce(
+  query: string,
+  domains: readonly string[],
+  recency: WebSearchRecency | null,
+  ctx: IToolContext,
+  deps: IWebSearchDeps
+): Promise<ISearchResult[] | string> {
   const searchUrl = buildSearchUrl(scopedQuery(query, domains), recency);
 
   if ("error" in searchUrl) {
@@ -454,11 +553,9 @@ export async function doWebSearch(
     return `web_search: search request failed — ${msg}`;
   }
 
-  const results = searxng
+  return searxng
     ? parseSearxngResults(safeJson(text))
     : parseDuckDuckGoResults(text);
-
-  return formatResults(filterPublicResults(results), maxResults(args));
 }
 
 async function realSearchFetch(url: string): Promise<ISearchResponse> {
