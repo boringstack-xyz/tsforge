@@ -134,6 +134,29 @@ describe("saveUserSetting", () => {
     });
     expect(() => saveUserSetting("PATH", "x", home)).toThrow("unknown setting");
   });
+
+  test("honours $TSFORGE_HOME, so sandboxed runs never touch the real home", async () => {
+    const home = await tempDir();
+    const saved = process.env.TSFORGE_HOME;
+
+    process.env.TSFORGE_HOME = home;
+
+    try {
+      saveUserSetting("webTools", false);
+      expect(userConfigPath()).toBe(join(home, ".tsforge", "config.json"));
+      expect(
+        JSON.parse(
+          await readFile(join(home, ".tsforge", "config.json"), "utf8")
+        )
+      ).toEqual({ settings: { webTools: false } });
+    } finally {
+      if (saved === undefined) {
+        delete process.env.TSFORGE_HOME;
+      } else {
+        process.env.TSFORGE_HOME = saved;
+      }
+    }
+  });
 });
 
 function menuDeps(saved: [string, unknown][]): IConfigDeps {

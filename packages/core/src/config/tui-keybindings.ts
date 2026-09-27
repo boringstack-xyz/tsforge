@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
 import { isRecord } from "../lib/guards";
+import { userConfigPath } from "./user-settings";
 
 /** Pane + overlay actions configurable via `tui.keybindings`. */
 export type TuiPaneAction =
@@ -374,10 +373,6 @@ export function parseProjectTuiKeybindings(config: {
   readonly tui?: { readonly keybindings?: unknown };
 }): Partial<Record<TuiPaneAction, string | readonly string[]>> {
   return parseKeybindingsBlock(config.tui?.keybindings);
-}
-
-function userConfigPath(): string {
-  return join(homedir(), ".tsforge", "config.json");
 }
 
 /** Load `~/.tsforge/config.json` keybindings (user-global overrides). */

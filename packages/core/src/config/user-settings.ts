@@ -76,7 +76,12 @@ export const SETTINGS: Readonly<Record<string, ISettingDef>> = {
 /** Only tsforge's own variables may come from a config file (not PATH, …). */
 const PASSTHROUGH_RE = /^TSFORGE_[A-Z0-9_]+$/u;
 
-export function userConfigPath(home: string = homedir()): string {
+/** `$TSFORGE_HOME` when set (tests, sandboxes), else the real home dir. */
+function tsforgeHome(): string {
+  return process.env.TSFORGE_HOME ?? homedir();
+}
+
+export function userConfigPath(home: string = tsforgeHome()): string {
   return join(home, ".tsforge", "config.json");
 }
 
@@ -162,7 +167,7 @@ export function configEnv(
 export function applySettings(
   env: Record<string, string | undefined>,
   projectConfigPath: string | null,
-  home: string = homedir()
+  home: string = tsforgeHome()
 ): Map<string, string> {
   const merged = configEnv(readJson(userConfigPath(home)));
 
@@ -192,7 +197,7 @@ export function applySettings(
 export function saveUserSetting(
   name: string,
   value: boolean | string | number | undefined,
-  home: string = homedir()
+  home: string = tsforgeHome()
 ): void {
   if (SETTINGS[name] === undefined) {
     throw new Error(`unknown setting "${name}"`);
