@@ -60,7 +60,9 @@ On startup tsforge connects each server, lists its tools, and advertises them to
 
 ## Built-in integrations (Linear, Notion, Sentry, Twenty)
 
-Some MCP servers get a **curated** treatment instead of raw passthrough. When you configure a server keyed **`linear`**, **`notion`**, **`sentry`** or **`twenty`**, tsforge offers a small set of purpose-built verbs (e.g. `linear_read`, `notion_read`, `sentry_read`) instead of that server's dozens of raw tools — so the model's tool list stays focused — and hides the raw `mcp__<server>__*` tools by default (re-expose them with the matching `TSFORGE_<NAME>_RAW=1`). These follow a **capability = consent** model: the server being connected is your consent, reads work in every mode, and writes are held back while planning or running unattended.
+When you configure a server keyed **`linear`**, **`notion`**, **`sentry`** or **`twenty`**, the agent gets **that server's full toolset** (every `mcp__<server>__*` tool, with the server's own input schemas) plus a few purpose-built shortcuts on top (e.g. `linear_read`, `linear_start`, `twenty_read`). The shortcuts are conveniences, not a cap: anything the server can do, the agent can do.
+
+Each raw call is classified by what it does. Look-ups (`get_…`, `list_…`, `search…`) are **reads**; everything else is a **write**, and an unknown verb is treated as a write. The same **capability = consent** model as the shortcuts applies: the server being connected is your consent, reads work in every mode including planning, and writes are held back while planning or running unattended. For a smaller tool list, `TSFORGE_<NAME>_RAW=0` hides a server's raw tools behind its shortcuts.
 
 [GitHub](/integrations/git-github/) is first-class too, but via the `git`/`gh` binaries rather than MCP.
 

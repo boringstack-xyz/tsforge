@@ -1,8 +1,10 @@
 import { isRecord } from "../lib/guards";
 import type { IMcpServerConfig } from "./mcp.types";
 
+import { INTEGRATION_MCP_SERVERS } from "../policy/mcp-kind";
+
 /** MCP server keys the curated Linear/Notion/Sentry/Twenty integrations require. */
-const INTEGRATION_MCP_KEYS = ["linear", "notion", "sentry", "twenty"] as const;
+const INTEGRATION_MCP_KEYS = INTEGRATION_MCP_SERVERS;
 
 type EnvLookup = Readonly<Record<string, string | undefined>>;
 

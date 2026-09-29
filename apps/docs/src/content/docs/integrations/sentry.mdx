@@ -33,9 +33,9 @@ The server **must be keyed exactly `sentry`**. Once it connects, an interactive 
 
 Reads are available in every mode, including [plan mode](/cli/plan-mode/). The `resolve` write follows capability-as-consent: allowed interactively, denied while planning or running unattended. See [Permissions & policy](/guardrails/policy/).
 
-| Variable | Default | Effect |
-| --- | --- | --- |
-| `TSFORGE_NO_SENTRY` | off | withhold the Sentry tools even when the server is connected (`=1`) |
-| `TSFORGE_SENTRY_RAW` | off | also advertise the raw `mcp__sentry__*` tools alongside the curated verbs (`=1`) |
+| Variable             | Default | Effect                                                                   |
+| -------------------- | ------- | ------------------------------------------------------------------------ |
+| `TSFORGE_NO_SENTRY`  | off     | withhold the Sentry tools even when the server is connected (`=1`)       |
+| `TSFORGE_SENTRY_RAW` | on      | `=0` hides the full `mcp__sentry__*` toolset, leaving only the shortcuts |
 
 → [MCP servers](/integrations/mcp/) · [Linear](/integrations/linear/) · [Environment variables](/reference/flags/)

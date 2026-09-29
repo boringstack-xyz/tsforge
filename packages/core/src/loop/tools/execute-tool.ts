@@ -9,7 +9,7 @@ import { doGitWrite } from "./git-write-ops";
 import { doGithubRead, doGithubWrite } from "./github-ops";
 import { doLinearRead, doLinearWrite, doLinearStart } from "./linear-ops";
 import { doNotionRead, doNotionWrite } from "./notion-ops";
-import { doChatwootRead, doChatwootWrite } from "./chatwoot-ops";
+import { doChatwootApi, doChatwootRead, doChatwootWrite } from "./chatwoot-ops";
 import { doTwentyRead, doTwentyWrite } from "./twenty-ops";
 import { doSentryRead, doSentryWrite } from "./sentry-ops";
 import { doAddDependency } from "./add-dependency";
@@ -95,6 +95,7 @@ const HANDLERS: Record<ToolName, ToolHandler> = {
   [TOOL_NAME.twentyWrite]: doTwentyWrite,
   [TOOL_NAME.chatwootRead]: doChatwootRead,
   [TOOL_NAME.chatwootWrite]: doChatwootWrite,
+  [TOOL_NAME.chatwootApi]: doChatwootApi,
   [TOOL_NAME.sentryRead]: doSentryRead,
   [TOOL_NAME.sentryWrite]: doSentryWrite,
   [TOOL_NAME.addDependency]: doAddDependency,

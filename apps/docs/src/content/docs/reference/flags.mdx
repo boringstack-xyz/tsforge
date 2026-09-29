@@ -23,20 +23,20 @@ You don't have to pass these variables every time you start tsforge. Put them in
 }
 ```
 
-| Setting | Variable it sets |
-| --- | --- |
-| `browser` | `TSFORGE_BROWSER` (Chrome research bridge) |
-| `browserPort` | `TSFORGE_BROWSER_PORT` |
-| `browserAllowPrivate` | `TSFORGE_BROWSER_ALLOW_PRIVATE` |
-| `webTools` | `TSFORGE_WEB` |
-| `searxngUrl` | `TSFORGE_SEARXNG_URL` |
-| `searchBackend` | `TSFORGE_WEB_SEARCH_BACKEND` |
-| `stackExchangeKey` | `TSFORGE_STACKEXCHANGE_KEY` |
-| `chatwootUrl` | `TSFORGE_CHATWOOT_URL` ([Chatwoot](/integrations/chatwoot/)) |
-| `chatwootToken` | `TSFORGE_CHATWOOT_TOKEN` |
-| `chatwootAccountId` | `TSFORGE_CHATWOOT_ACCOUNT_ID` |
-| `maxTurns` | `TSFORGE_MAX_TURNS` |
-| `compactAt` | `TSFORGE_COMPACT_AT` |
+| Setting               | Variable it sets                                             |
+| --------------------- | ------------------------------------------------------------ |
+| `browser`             | `TSFORGE_BROWSER` (Chrome research bridge)                   |
+| `browserPort`         | `TSFORGE_BROWSER_PORT`                                       |
+| `browserAllowPrivate` | `TSFORGE_BROWSER_ALLOW_PRIVATE`                              |
+| `webTools`            | `TSFORGE_WEB`                                                |
+| `searxngUrl`          | `TSFORGE_SEARXNG_URL`                                        |
+| `searchBackend`       | `TSFORGE_WEB_SEARCH_BACKEND`                                 |
+| `stackExchangeKey`    | `TSFORGE_STACKEXCHANGE_KEY`                                  |
+| `chatwootUrl`         | `TSFORGE_CHATWOOT_URL` ([Chatwoot](/integrations/chatwoot/)) |
+| `chatwootToken`       | `TSFORGE_CHATWOOT_TOKEN`                                     |
+| `chatwootAccountId`   | `TSFORGE_CHATWOOT_ACCOUNT_ID`                                |
+| `maxTurns`            | `TSFORGE_MAX_TURNS`                                          |
+| `compactAt`           | `TSFORGE_COMPACT_AT`                                         |
 
 `env` sets any other `TSFORGE_*` variable (other names are ignored). Order of precedence: a real environment variable beats the project file, which beats `~/.tsforge/config.json`. The `/config` toggles for web tools, Chrome and the SearXNG URL save to `~/.tsforge/config.json` for you.
 
@@ -47,10 +47,10 @@ Feature toggles are configured **inside the harness**, not through env vars. Run
 one-line description and its live value, and changes apply immediately. Configurable
 there:
 
-| Setting | Default | What it does |
-| --- | --- | --- |
-| Web tools | on (interactive) | keyless `web_fetch` + `web_search` (DuckDuckGo); off in one-shot/eval for offline determinism. See [Web access](/integrations/web-tools/) |
-| TDD enforcement | on | test-first guidance + `test-sibling-required` as an error on changed logic files |
+| Setting         | Default          | What it does                                                                                                                              |
+| --------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Web tools       | on (interactive) | keyless `web_fetch` + `web_search` (DuckDuckGo); off in one-shot/eval for offline determinism. See [Web access](/integrations/web-tools/) |
+| TDD enforcement | on               | test-first guidance + `test-sibling-required` as an error on changed logic files                                                          |
 
 `/config` also sets the model, interactive mode, gate command, and editable scope.
 
@@ -72,14 +72,14 @@ The variables listed below the fold are **endpoint, tuning, and operational** kn
 The always-on tools can be withheld via env only for eval sweeps or non-git /
 headless environments. Never change these interactively:
 
-| Variable | Default | Effect |
-| --- | --- | --- |
-| `TSFORGE_NO_LSP_TOOLS` | off | withhold the LSP navigation tools (`=1`) |
-| `TSFORGE_NO_OSC8` | off | disable OSC 8 `file:line` hyperlinks in the pane TUI (`=1`) |
-| `TSFORGE_NO_GIT_TOOL` | off | withhold the `git_context` tool (`=1`) |
-| `TSFORGE_NO_SCRIPT` | off | withhold the `script` (programmatic tool calling) tool (`=1`) |
-| `TSFORGE_NO_DELEGATION` | off | withhold `spawn_agent`: run single-stream with no subagents (`=1`). See [delegation](/agent/delegation/) |
-| `TSFORGE_NO_REVIEW` | off | skip the automatic post-work [agent review](/cli/review/) after a task goes green (`=1`) |
+| Variable                | Default | Effect                                                                                                   |
+| ----------------------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| `TSFORGE_NO_LSP_TOOLS`  | off     | withhold the LSP navigation tools (`=1`)                                                                 |
+| `TSFORGE_NO_OSC8`       | off     | disable OSC 8 `file:line` hyperlinks in the pane TUI (`=1`)                                              |
+| `TSFORGE_NO_GIT_TOOL`   | off     | withhold the `git_context` tool (`=1`)                                                                   |
+| `TSFORGE_NO_SCRIPT`     | off     | withhold the `script` (programmatic tool calling) tool (`=1`)                                            |
+| `TSFORGE_NO_DELEGATION` | off     | withhold `spawn_agent`: run single-stream with no subagents (`=1`). See [delegation](/agent/delegation/) |
+| `TSFORGE_NO_REVIEW`     | off     | skip the automatic post-work [agent review](/cli/review/) after a task goes green (`=1`)                 |
 
 ## Git context
 
@@ -89,55 +89,55 @@ Offered only when there is existing code to inspect (greenfield scratch builds h
 
 ## Integrations: GitHub, Linear, Notion, Sentry, Twenty, Chatwoot
 
-Optional, opt-in integrations that let the agent read and act on the tools your workflow runs through. Each is **off** until it's available — [GitHub](/integrations/git-github/) when the `gh` CLI is installed and authenticated; [Linear](/integrations/linear/), [Notion](/integrations/notion/), [Sentry](/integrations/sentry/) and [Twenty](/integrations/twenty/) when their MCP server is configured; [Chatwoot](/integrations/chatwoot/) when its URL, token and account are set — and each **writes only in interactive modes** (never while planning or running unattended). The kill-switches force one off; the `*_RAW` flags additionally expose that server's raw `mcp__<server>__*` tools alongside the curated verbs (off by default, so the model sees a small, focused tool set).
+Optional, opt-in integrations that let the agent read and act on the tools your workflow runs through. Each is **off** until it's available — [GitHub](/integrations/git-github/) when the `gh` CLI is installed and authenticated; [Linear](/integrations/linear/), [Notion](/integrations/notion/), [Sentry](/integrations/sentry/) and [Twenty](/integrations/twenty/) when their MCP server is configured; [Chatwoot](/integrations/chatwoot/) when its URL, token and account are set — and each **writes only in interactive modes** (never while planning or running unattended). The kill-switches force one off. Each MCP integration offers the server's **full** `mcp__<server>__*` toolset plus shortcuts; a `*_RAW=0` flag hides the full toolset for a smaller tool list.
 
-| Variable | Default | Effect |
-| --- | --- | --- |
-| `TSFORGE_NO_GITHUB` | off | withhold the git/GitHub tools even when `gh` is authenticated (`=1`) |
-| `TSFORGE_NO_LINEAR` | off | withhold the Linear tools even when the server is connected (`=1`) |
-| `TSFORGE_LINEAR_RAW` | off | also advertise the raw `mcp__linear__*` tools (`=1`) |
-| `TSFORGE_NO_NOTION` | off | withhold the Notion tools (`=1`) |
-| `TSFORGE_NOTION_RAW` | off | also advertise the raw `mcp__notion__*` tools (`=1`) |
-| `TSFORGE_NO_SENTRY` | off | withhold the Sentry tools (`=1`) |
-| `TSFORGE_SENTRY_RAW` | off | also advertise the raw `mcp__sentry__*` tools (`=1`) |
-| `TSFORGE_NO_TWENTY` | off | withhold the Twenty CRM tools (`=1`) |
-| `TSFORGE_TWENTY_RAW` | off | also advertise the raw `mcp__twenty__*` tools (`=1`) |
-| `TSFORGE_NO_CHATWOOT` | off | withhold the Chatwoot tools (`=1`) |
-| `TSFORGE_CHATWOOT_URL` | unset | Chatwoot instance URL (prefer `chatwootUrl` in the settings file) |
-| `TSFORGE_CHATWOOT_TOKEN` | unset | Chatwoot access token (prefer `chatwootToken`) |
-| `TSFORGE_CHATWOOT_ACCOUNT_ID` | unset | Chatwoot account id (prefer `chatwootAccountId`) |
+| Variable                      | Default | Effect                                                               |
+| ----------------------------- | ------- | -------------------------------------------------------------------- |
+| `TSFORGE_NO_GITHUB`           | off     | withhold the git/GitHub tools even when `gh` is authenticated (`=1`) |
+| `TSFORGE_NO_LINEAR`           | off     | withhold the Linear tools even when the server is connected (`=1`)   |
+| `TSFORGE_LINEAR_RAW`          | on      | `=0` hides Linear's full `mcp__linear__*` toolset (shortcuts only)   |
+| `TSFORGE_NO_NOTION`           | off     | withhold the Notion tools (`=1`)                                     |
+| `TSFORGE_NOTION_RAW`          | on      | `=0` hides Notion's full toolset                                     |
+| `TSFORGE_NO_SENTRY`           | off     | withhold the Sentry tools (`=1`)                                     |
+| `TSFORGE_SENTRY_RAW`          | on      | `=0` hides Sentry's full toolset                                     |
+| `TSFORGE_NO_TWENTY`           | off     | withhold the Twenty CRM tools (`=1`)                                 |
+| `TSFORGE_TWENTY_RAW`          | on      | `=0` hides Twenty's raw tools                                        |
+| `TSFORGE_NO_CHATWOOT`         | off     | withhold the Chatwoot tools (`=1`)                                   |
+| `TSFORGE_CHATWOOT_URL`        | unset   | Chatwoot instance URL (prefer `chatwootUrl` in the settings file)    |
+| `TSFORGE_CHATWOOT_TOKEN`      | unset   | Chatwoot access token (prefer `chatwootToken`)                       |
+| `TSFORGE_CHATWOOT_ACCOUNT_ID` | unset   | Chatwoot account id (prefer `chatwootAccountId`)                     |
 
 ## Web access
 
 Opt-in, free, and no required service keys. Turn on **Web tools** in [`/config`](/cli/interactive/) to add read-only research tools: `package_info`, `package_docs`, `web_fetch`, `web_search`, and `web_browse`. Search defaults to DuckDuckGo's keyless HTML endpoint. SearXNG is not bundled; set `TSFORGE_SEARXNG_URL` only when you already run a SearXNG service. Full guide: [Web access](/integrations/web-tools/).
 
-| Variable | Default | Toggles |
-| --- | --- | --- |
-| `TSFORGE_NPM_REGISTRY` | npm registry | registry used by `package_info` / `package_docs` |
-| `TSFORGE_SEARXNG_URL` | unset | route `web_search` to a SearXNG instance you already run (e.g. `http://searx.lan`) |
-| `TSFORGE_STACKEXCHANGE_KEY` | unset | Stack Exchange API key for `se_search` / `se_question`: raises the daily quota from 300 to 10,000 requests |
-| `TSFORGE_WEB_SEARCH_BACKEND` | auto | `duckduckgo` or `searxng`; `searxng` fails closed if no SearXNG URL is set |
+| Variable                     | Default      | Toggles                                                                                                    |
+| ---------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------- |
+| `TSFORGE_NPM_REGISTRY`       | npm registry | registry used by `package_info` / `package_docs`                                                           |
+| `TSFORGE_SEARXNG_URL`        | unset        | route `web_search` to a SearXNG instance you already run (e.g. `http://searx.lan`)                         |
+| `TSFORGE_STACKEXCHANGE_KEY`  | unset        | Stack Exchange API key for `se_search` / `se_question`: raises the daily quota from 300 to 10,000 requests |
+| `TSFORGE_WEB_SEARCH_BACKEND` | auto         | `duckduckgo` or `searxng`; `searxng` fails closed if no SearXNG URL is set                                 |
 
 ## Chrome bridge
 
 Let the agent read pages in your real, logged-in Chrome through the tsforge extension (read and navigate only). Full guide: [Research in your Chrome](/integrations/chrome/).
 
-| Variable | Default | Toggles |
-| --- | --- | --- |
-| `TSFORGE_BROWSER` | off | start the localhost bridge and offer the `browser_*` tools (`=1`) |
-| `TSFORGE_BROWSER_PORT` | `47823` | bridge port (1024–65535) |
-| `TSFORGE_BROWSER_ALLOW_PRIVATE` | off | let the browser tools open private/loopback hosts (`=1`) |
+| Variable                        | Default | Toggles                                                           |
+| ------------------------------- | ------- | ----------------------------------------------------------------- |
+| `TSFORGE_BROWSER`               | off     | start the localhost bridge and offer the `browser_*` tools (`=1`) |
+| `TSFORGE_BROWSER_PORT`          | `47823` | bridge port (1024–65535)                                          |
+| `TSFORGE_BROWSER_ALLOW_PRIVATE` | off     | let the browser tools open private/loopback hosts (`=1`)          |
 
 ## Image capabilities (vision, generation)
 
 When the chat model is text-only, route **reading** and **generating** images to a separate backend. Configure it in [`models.json` `capabilities`](/inference/models-json/#extra-capabilities-vision-image-generation) or the env vars below. Each capability is off unless configured; when on, it enables the `read_image` / `generate_image` tools and the drag / paste / `@` attachment UX ([interactive](/cli/interactive/)). The env trio is an ad-hoc backend without editing the file; a `_MODEL` alone (no `_BASE_URL`) names an existing registry entry.
 
-| Variable | Default | Effect |
-| --- | --- | --- |
-| `TSFORGE_VISION_BASE_URL` / `TSFORGE_VISION_MODEL` / `TSFORGE_VISION_API_KEY` | unset | ad-hoc vision (image-reading) backend |
-| `TSFORGE_IMAGE_BASE_URL` / `TSFORGE_IMAGE_MODEL` / `TSFORGE_IMAGE_API_KEY` | unset | ad-hoc image-generation backend |
-| `TSFORGE_IMAGE_API` | `chat-modalities` | image-gen wire shape: `chat-modalities` or `images-generations` |
-| `TSFORGE_IMAGE_PROTOCOL` | auto | inline preview of generated images: `iterm2` to force, `off`/`none` to disable (auto-detects iTerm2, disabled under tmux) |
+| Variable                                                                      | Default           | Effect                                                                                                                    |
+| ----------------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `TSFORGE_VISION_BASE_URL` / `TSFORGE_VISION_MODEL` / `TSFORGE_VISION_API_KEY` | unset             | ad-hoc vision (image-reading) backend                                                                                     |
+| `TSFORGE_IMAGE_BASE_URL` / `TSFORGE_IMAGE_MODEL` / `TSFORGE_IMAGE_API_KEY`    | unset             | ad-hoc image-generation backend                                                                                           |
+| `TSFORGE_IMAGE_API`                                                           | `chat-modalities` | image-gen wire shape: `chat-modalities` or `images-generations`                                                           |
+| `TSFORGE_IMAGE_PROTOCOL`                                                      | auto              | inline preview of generated images: `iterm2` to force, `off`/`none` to disable (auto-detects iTerm2, disabled under tmux) |
 
 Generated images are saved under `.tsforge/images/`. Pasting an image is **Ctrl+V** (a terminal app can't receive Cmd+V); identical images are described once (no duplicate cost). Model IDs + costs: OpenRouter runs everything through `/chat/completions` (no `/images` endpoint). For example, `google/gemini-2.5-flash-lite` (read) and `google/gemini-3.1-flash-lite-image` (generate).
 
@@ -145,96 +145,96 @@ Generated images are saved under `.tsforge/images/`. Pasting an image is **Ctrl+
 
 Extra gate steps (default off; each skips cleanly when nothing applies). See [How tsforge builds the gate](/loop/gate-floor/).
 
-| Variable | Adds |
-| --- | --- |
-| `TSFORGE_COVERAGE=<pct>` | fail if line/function coverage is below the floor |
+| Variable                     | Adds                                                                                                                                     |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `TSFORGE_COVERAGE=<pct>`     | fail if line/function coverage is below the floor                                                                                        |
 | `TSFORGE_BOOT="<start cmd>"` | boot the server (`TSFORGE_BOOT_URL`, default `http://localhost:3000/`; `TSFORGE_BOOT_TIMEOUT`, default `15000` ms) and require a non-5xx |
-| `TSFORGE_PROPTEST=1` | fuzz exported functions from their types; fail if any throws on valid input (`TSFORGE_PROPTEST_TIMEOUT_MS` bounds the generated suite) |
+| `TSFORGE_PROPTEST=1`         | fuzz exported functions from their types; fail if any throws on valid input (`TSFORGE_PROPTEST_TIMEOUT_MS` bounds the generated suite)   |
 
 ## Model / inference
 
-| Variable | Default | Toggles |
-| --- | --- | --- |
-| `TSFORGE_BASE_URL` | `http://localhost:8000/v1` | API endpoint |
-| `TSFORGE_MODEL` | `deepseek-v4-flash` | model name |
-| `TSFORGE_API_KEY` | unset | API key |
-| `TSFORGE_MAX_TOKENS` | `16384` | max output tokens |
-| `TSFORGE_REPETITION_PENALTY` | off | vLLM repetition penalty |
-| `TSFORGE_THINKING_BUDGET` | unset | reasoning token cap |
-| `TSFORGE_CONTEXT_WINDOW` | `32768` | context window |
-| `TSFORGE_COMPACT_AT` | `0.8` | auto-compact threshold. The summary call is bounded (≤60k chars in, 2048 tokens out, 3 min); if it still fails, tsforge keeps your requests verbatim and drops the older tool output instead of retrying forever |
-| `TSFORGE_MAX_TURNS` | unset | turn cap per message. Unset: research/chat sessions (no live gate) are uncapped, gated builds and plan mode stop at 1000. A number caps every session; `0` means unlimited |
+| Variable                     | Default                    | Toggles                                                                                                                                                                                                          |
+| ---------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TSFORGE_BASE_URL`           | `http://localhost:8000/v1` | API endpoint                                                                                                                                                                                                     |
+| `TSFORGE_MODEL`              | `deepseek-v4-flash`        | model name                                                                                                                                                                                                       |
+| `TSFORGE_API_KEY`            | unset                      | API key                                                                                                                                                                                                          |
+| `TSFORGE_MAX_TOKENS`         | `16384`                    | max output tokens                                                                                                                                                                                                |
+| `TSFORGE_REPETITION_PENALTY` | off                        | vLLM repetition penalty                                                                                                                                                                                          |
+| `TSFORGE_THINKING_BUDGET`    | unset                      | reasoning token cap                                                                                                                                                                                              |
+| `TSFORGE_CONTEXT_WINDOW`     | `32768`                    | context window                                                                                                                                                                                                   |
+| `TSFORGE_COMPACT_AT`         | `0.8`                      | auto-compact threshold. The summary call is bounded (≤60k chars in, 2048 tokens out, 3 min); if it still fails, tsforge keeps your requests verbatim and drops the older tool output instead of retrying forever |
+| `TSFORGE_MAX_TURNS`          | unset                      | turn cap per message. Unset: research/chat sessions (no live gate) are uncapped, gated builds and plan mode stop at 1000. A number caps every session; `0` means unlimited                                       |
 
 ## Judge (eval scripts)
 
-| Variable | Default |
-| --- | --- |
-| `TSFORGE_JUDGE_URL` | `TSFORGE_BASE_URL` |
-| `TSFORGE_JUDGE_MODEL` | `TSFORGE_MODEL` |
-| `TSFORGE_JUDGE_KEY` | `TSFORGE_API_KEY` |
+| Variable              | Default            |
+| --------------------- | ------------------ |
+| `TSFORGE_JUDGE_URL`   | `TSFORGE_BASE_URL` |
+| `TSFORGE_JUDGE_MODEL` | `TSFORGE_MODEL`    |
+| `TSFORGE_JUDGE_KEY`   | `TSFORGE_API_KEY`  |
 
 ## Session / paths
 
-| Variable | Default | Toggles |
-| --- | --- | --- |
-| `TSFORGE_HOME` | `~` | root for `~/.tsforge/` |
-| `TSFORGE_NO_PERSIST` | off | disable disk sessions |
-| `TSFORGE_SESSION_TTL_DAYS` | `30` | session prune age |
+| Variable                   | Default | Toggles                |
+| -------------------------- | ------- | ---------------------- |
+| `TSFORGE_HOME`             | `~`     | root for `~/.tsforge/` |
+| `TSFORGE_NO_PERSIST`       | off     | disable disk sessions  |
+| `TSFORGE_SESSION_TTL_DAYS` | `30`    | session prune age      |
 
 ## Timeouts
 
-| Variable | Default | Toggles |
-| --- | --- | --- |
-| `TSFORGE_RUN_TIMEOUT_MS` | `120000` | shell timeout (`0` = none) |
-| `TSFORGE_GATE_TIMEOUT_MS` | `600000` | gate timeout (`0` = none) |
+| Variable                  | Default  | Toggles                    |
+| ------------------------- | -------- | -------------------------- |
+| `TSFORGE_RUN_TIMEOUT_MS`  | `120000` | shell timeout (`0` = none) |
+| `TSFORGE_GATE_TIMEOUT_MS` | `600000` | gate timeout (`0` = none)  |
 
 ## Gate subprocess
 
-| Variable | Default |
-| --- | --- |
-| `TSFORGE_PACKS` | comma-separated pack IDs |
-| `TSFORGE_RULE_OVERRIDES` | JSON severity map |
-| `TSFORGE_CONVENTIONS` | JSON conventions block (interface naming / enums): rebuilds the bundled rule options. Written by [`tsforge setup`](/cli/setup/) |
+| Variable                 | Default                                                                                                                         |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `TSFORGE_PACKS`          | comma-separated pack IDs                                                                                                        |
+| `TSFORGE_RULE_OVERRIDES` | JSON severity map                                                                                                               |
+| `TSFORGE_CONVENTIONS`    | JSON conventions block (interface naming / enums): rebuilds the bundled rule options. Written by [`tsforge setup`](/cli/setup/) |
 
 ## Eval scripts
 
-| Variable | Default |
-| --- | --- |
-| `TSFORGE_SEED` | fixture seed name |
-| `TSFORGE_TEMPS` | `0,0.5` |
-| `TSFORGE_REPEATS` | `3` |
-| `TSFORGE_STREAM` | off (`=1` to enable) |
+| Variable                   | Default              |
+| -------------------------- | -------------------- |
+| `TSFORGE_SEED`             | fixture seed name    |
+| `TSFORGE_TEMPS`            | `0,0.5`              |
+| `TSFORGE_REPEATS`          | `3`                  |
+| `TSFORGE_STREAM`           | off (`=1` to enable) |
 | `TSFORGE_FEATURE_VARIANTS` | comma-separated dims |
 
 ## Script tool (programmatic tool calling)
 
 On by default; withhold with `TSFORGE_NO_SCRIPT=1` (above). Tuning knobs:
 
-| Variable | Default | Toggles |
-| --- | --- | --- |
-| `TSFORGE_SCRIPT_MAX_CALLS` | `50` | max tool calls one script may make |
+| Variable                    | Default | Toggles                                 |
+| --------------------------- | ------- | --------------------------------------- |
+| `TSFORGE_SCRIPT_MAX_CALLS`  | `50`    | max tool calls one script may make      |
 | `TSFORGE_SCRIPT_TIMEOUT_MS` | `60000` | per-script timeout (capped at `300000`) |
 
 ## Automation hooks
 
-| Variable | Set by | Meaning |
-| --- | --- | --- |
+| Variable         | Set by                                | Meaning                                                                      |
+| ---------------- | ------------------------------------- | ---------------------------------------------------------------------------- |
 | `TSFORGE_STATUS` | tsforge (for your `--notify` command) | the run outcome (e.g. `greenfield done 7/7`). Read it in the notifier script |
 
 ## Debug & tracing
 
-| Variable | Default | Toggles |
-| --- | --- | --- |
-| `TSFORGE_TRACE` | off | surface quietly-degraded errors: a file path appends `[scope] message` lines; `1`/`true`/`stderr` writes to stderr |
-| `TSFORGE_DEBUG` | off | alias for `TSFORGE_TRACE` (same channel) |
-| `TSFORGE_EDITOR_DEBUG` | off | append input-editor event logs to the given file path |
-| `TSFORGE_BASIC_INPUT` | off | `=1` forces the plain readline input row instead of the multi-line editor (compat/debug) |
+| Variable               | Default | Toggles                                                                                                            |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------------ |
+| `TSFORGE_TRACE`        | off     | surface quietly-degraded errors: a file path appends `[scope] message` lines; `1`/`true`/`stderr` writes to stderr |
+| `TSFORGE_DEBUG`        | off     | alias for `TSFORGE_TRACE` (same channel)                                                                           |
+| `TSFORGE_EDITOR_DEBUG` | off     | append input-editor event logs to the given file path                                                              |
+| `TSFORGE_BASIC_INPUT`  | off     | `=1` forces the plain readline input row instead of the multi-line editor (compat/debug)                           |
 
 ## Tests
 
-| Variable | Default |
-| --- | --- |
-| `TSFORGE_BROWSER_TESTS` | off (`=1` for Playwright integration) |
+| Variable                 | Default                                                    |
+| ------------------------ | ---------------------------------------------------------- |
+| `TSFORGE_BROWSER_TESTS`  | off (`=1` for Playwright integration)                      |
 | `TSFORGE_WEB_LIVE_TESTS` | off (`=1` for live `web_fetch`/`web_search` network tests) |
 
 → [Commands](/reference/commands/) · [Permissions & policy](/guardrails/policy/)

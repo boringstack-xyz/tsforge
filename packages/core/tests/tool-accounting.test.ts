@@ -541,6 +541,7 @@ const SPECIAL_TOOLS = new Set<string>([
   // mutate an external service, not gated source → no re-gate. Special-with-reason.
   TOOL_NAME.twentyWrite,
   TOOL_NAME.chatwootWrite,
+  TOOL_NAME.chatwootApi,
   // Checklist mutations touch plan JSON under .tsforge/, not gated source —
   // no scoped edit count / re-gate. task_list + present_plan are read-only.
   TOOL_NAME.taskFocus,

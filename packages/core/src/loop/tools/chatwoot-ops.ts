@@ -121,10 +121,22 @@ function errorDetail(body: string): string {
   return body.slice(0, 200);
 }
 
-/** One call to the account API. Never throws. */
+export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+
+const METHODS: readonly HttpMethod[] = [
+  "GET",
+  "POST",
+  "PUT",
+  "PATCH",
+  "DELETE",
+];
+
+/** One call to the Chatwoot API: a path under the account (`/conversations/1`)
+ *  or an absolute API path (`/api/v1/profile`, `/api/v2/accounts/1/reports`).
+ *  Never throws. */
 export async function chatwootApi(
   deps: IChatwootDeps,
-  method: "GET" | "POST" | "PATCH",
+  method: HttpMethod,
   path: string,
   body?: Record<string, unknown>
 ): Promise<ApiResult> {
@@ -134,7 +146,7 @@ export async function chatwootApi(
     return { ok: false, error: CAPABILITY_OFF };
   }
 
-  const url = path.startsWith("/api/v1/profile")
+  const url = path.startsWith("/api/")
     ? `${cfg.baseUrl}${path}`
     : `${cfg.baseUrl}/api/v1/accounts/${String(cfg.accountId)}${path}`;
 
@@ -634,6 +646,121 @@ async function addLabels(
   return res.ok ? `#${String(id)} labels: ${merged.join(", ")}` : res.error;
 }
 
+/** Remove labels (the rest are kept). */
+async function removeLabels(
+  deps: IChatwootDeps,
+  id: number,
+  labels: readonly string[]
+): Promise<string> {
+  const drop = new Set(labels.map((l) => l.trim()).filter((l) => l.length > 0));
+
+  if (drop.size === 0) {
+    return "chatwoot_write unlabel: needs `labels` (the names to remove)";
+  }
+
+  const current = await chatwootApi(
+    deps,
+    "GET",
+    `/conversations/${String(id)}/labels`
+  );
+
+  if (!current.ok) {
+    return current.error;
+  }
+
+  const existing = rec(current.data).payload;
+  const have = Array.isArray(existing)
+    ? existing.filter((l): l is string => typeof l === "string")
+    : [];
+  const kept = have.filter((l) => !drop.has(l));
+  const res = await chatwootApi(
+    deps,
+    "POST",
+    `/conversations/${String(id)}/labels`,
+    {
+      labels: kept,
+    }
+  );
+
+  return res.ok
+    ? `#${String(id)} labels: ${kept.length > 0 ? kept.join(", ") : "(none)"}`
+    : res.error;
+}
+
+// ── full API access ──────────────────────────────────────────────────────────
+
+/** A path the model may call: relative to the instance, no scheme, host or
+ *  `..` — so the token can only ever reach this Chatwoot. */
+export function safeApiPath(path: string): string | null {
+  const p = path.trim();
+
+  if (!p.startsWith("/") || p.startsWith("//") || /:\/\/|\.\.|\\|\s/u.test(p)) {
+    return null;
+  }
+
+  return p;
+}
+
+/**
+ * Any Chatwoot API call, for everything the curated verbs don't cover:
+ * creating contacts or conversations, canned responses, teams, macros,
+ * automation, deleting, reports. GET is a read; every other method a write
+ * (gated like chatwoot_write). Never throws.
+ */
+export async function doChatwootApi(
+  args: Record<string, unknown>,
+  ctx: IToolContext,
+  deps: IChatwootDeps = defaultDeps()
+): Promise<string> {
+  if (ctx.chatwoot !== true || deps.config === null) {
+    return reject(ctx, "chatwoot_api", CAPABILITY_OFF);
+  }
+
+  const method = str(args, "method").trim().toUpperCase();
+  const verb = METHODS.find((m) => m === method);
+  const path = safeApiPath(str(args, "path"));
+
+  if (verb === undefined) {
+    return reject(
+      ctx,
+      "chatwoot_api",
+      `method must be one of ${METHODS.join("|")}`
+    );
+  }
+
+  if (path === null) {
+    return reject(
+      ctx,
+      "chatwoot_api",
+      "path must be an API path on this instance, e.g. /contacts?page=1 or /api/v1/profile"
+    );
+  }
+
+  const body = args.body;
+
+  if (body !== undefined && !isRecord(body)) {
+    return reject(ctx, "chatwoot_api", "body must be a JSON object");
+  }
+
+  ctx.report({
+    kind: "tool",
+    task: ctx.task,
+    message: `chatwoot_api ${verb} ${path}`,
+  });
+
+  const res = await chatwootApi(deps, verb, path, body);
+
+  if (!res.ok) {
+    return res.error;
+  }
+
+  const max = intArg(args, "maxChars") ?? LOOP_LIMITS.maxToolOutputChars;
+
+  return res.data === null
+    ? `${verb} ${path}: ok`
+    : capHead(JSON.stringify(res.data, null, 1), max);
+}
+
 // ── dispatch ─────────────────────────────────────────────────────────────────
 
 function conversationId(args: Record<string, unknown>): number | undefined {
@@ -757,11 +884,13 @@ export async function doChatwootWrite(
       return assign(deps, id, str(args, "assignee"));
     case "label":
       return addLabels(deps, id, strArrayArg(args, "labels") ?? []);
+    case "unlabel":
+      return removeLabels(deps, id, strArrayArg(args, "labels") ?? []);
     default:
       return reject(
         ctx,
         "chatwoot_write",
-        `unknown op '${op}' (use reply|note|status|assign|label)`
+        `unknown op '${op}' (use reply|note|status|assign|label|unlabel)`
       );
   }
 }

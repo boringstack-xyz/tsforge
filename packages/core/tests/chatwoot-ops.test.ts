@@ -2,8 +2,10 @@ import { test, expect, afterEach } from "bun:test";
 import {
   chatwootConfig,
   conversationLine,
+  doChatwootApi,
   doChatwootRead,
   doChatwootWrite,
+  safeApiPath,
   messageLine,
   payloadList,
   resolveChatwootCapability,
@@ -96,6 +98,7 @@ const BODY_KEYS: Record<string, readonly string[]> = {
   "POST /conversations/42/toggle_status": ["status"],
   "POST /conversations/42/assignments": ["assignee_id"],
   "POST /conversations/42/labels": ["labels"],
+  "POST /contacts": ["name", "email", "inbox_id"],
 };
 
 function fake(routes: Routes): { deps: IChatwootDeps; calls: ICall[] } {
@@ -624,4 +627,109 @@ test("messageLine renders an unknown type safely", () => {
   expect(messageLine({ content: "x", message_type: 9, created_at: 0 })).toBe(
     "[1970-01-01 00:00] message: x"
   );
+});
+
+// ── unlabel + full API access ────────────────────────────────────────────────
+
+test("unlabel removes only the named labels, keeping the rest", async () => {
+  const { deps, calls } = fake({
+    "GET /conversations/42/labels": [
+      200,
+      { payload: ["billing", "vip", "refund"] },
+    ],
+    "POST /conversations/42/labels": [200, { payload: ["billing"] }],
+  });
+
+  expect(
+    await doChatwootWrite(
+      { op: "unlabel", id: 42, labels: ["vip", "refund", "nope"] },
+      ctx(),
+      deps
+    )
+  ).toBe("#42 labels: billing");
+  expect(calls[1]?.body).toEqual({ labels: ["billing"] });
+});
+
+test("chatwoot_api: any method and account path, body passed through", async () => {
+  const { deps, calls } = fake({
+    "POST /contacts": [200, { payload: { contact: { id: 77 } } }],
+    "DELETE /contacts/77": [200, {}],
+  });
+
+  const created = await doChatwootApi(
+    {
+      method: "post",
+      path: "/contacts",
+      body: { name: "Test", email: "t@example.test", inbox_id: 1 },
+    },
+    ctx(),
+    deps
+  );
+
+  expect(created).toContain('"id": 77');
+  expect(calls[0]).toMatchObject({ method: "POST", path: "/contacts" });
+
+  await doChatwootApi({ method: "DELETE", path: "/contacts/77" }, ctx(), deps);
+  expect(calls[1]).toMatchObject({ method: "DELETE", path: "/contacts/77" });
+});
+
+test("chatwoot_api: absolute /api/ paths are not re-prefixed", async () => {
+  const { deps, calls } = fake({ "GET /api/v1/profile": [200, { id: 1 }] });
+
+  await doChatwootApi({ method: "GET", path: "/api/v1/profile" }, ctx(), deps);
+  expect(calls[0]?.path).toBe("/api/v1/profile");
+});
+
+test("chatwoot_api: the token can only ever reach this instance", async () => {
+  const { deps, calls } = fake({});
+
+  for (const path of [
+    "https://evil.example/steal",
+    "//evil.example/x",
+    "/contacts/../../../../etc",
+    "contacts",
+    "/contacts\\x",
+    "/contacts x",
+  ]) {
+    expect({
+      path,
+      out: await doChatwootApi({ method: "GET", path }, ctx(), deps),
+    }).toMatchObject({
+      path,
+      out: expect.stringContaining("path must be an API path"),
+    });
+  }
+
+  expect(
+    await doChatwootApi({ method: "TRACE", path: "/x" }, ctx(), deps)
+  ).toContain("method must be");
+  expect(
+    await doChatwootApi({ method: "POST", path: "/x", body: "[]" }, ctx(), deps)
+  ).toContain("body must be a JSON object");
+  expect(calls).toHaveLength(0);
+  expect(safeApiPath(" /contacts?page=2 ")).toBe("/contacts?page=2");
+});
+
+test("chatwoot_api fails closed with the capability off", async () => {
+  const { deps, calls } = fake({});
+
+  expect(
+    await doChatwootApi({ method: "GET", path: "/contacts" }, ctx(false), deps)
+  ).toContain("capability is off");
+  expect(calls).toHaveLength(0);
+});
+
+test("chatwoot_api is classified per call: GET reads, anything else writes", async () => {
+  const { classifyAction } = await import("../src/policy/classify");
+  const kind = (method: string): string =>
+    classifyAction(
+      { id: "1", name: "chatwoot_api", arguments: { method, path: "/x" } },
+      "/w"
+    ).kind;
+
+  expect(kind("GET")).toBe("integration_read");
+  expect(kind("get")).toBe("integration_read");
+  expect(kind("POST")).toBe("integration_write");
+  expect(kind("DELETE")).toBe("integration_write");
+  expect(kind("")).toBe("integration_write");
 });

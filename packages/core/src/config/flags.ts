@@ -10,6 +10,11 @@ function isOn(name: string): boolean {
   return process.env[name] === FLAG_ON;
 }
 
+/** On unless explicitly switched off with `=0` — for defaults that are ON. */
+function notOff(name: string): boolean {
+  return process.env[name] !== "0";
+}
+
 export const flags = {
   /** Withhold the LSP nav tool set even on existing-code runs (A/B control). */
   noLspTools: (): boolean => isOn(ENV_FLAG.noLspTools),
@@ -72,21 +77,23 @@ export const flags = {
    *  linear_start verbs). The capability is otherwise on iff a `linear` MCP server
    *  is configured AND connected; set TSFORGE_NO_LINEAR=1 to force it off. */
   noLinear: (): boolean => isOn(ENV_FLAG.noLinear),
-  /** Re-expose the RAW `mcp__linear__*` tools alongside the curated verbs. Off by
-   *  default: when the linear capability is on, the raw Linear MCP tools are
-   *  suppressed from advertisement (still dispatchable) so the model's tool list
-   *  stays small. Set TSFORGE_LINEAR_RAW=1 for full passthrough. */
-  linearRaw: (): boolean => isOn(ENV_FLAG.linearRaw),
+  /** Offer the Linear MCP server's FULL toolset (`mcp__linear__*`: projects,
+   *  milestones, labels, documents, every issue field…) alongside the curated
+   *  verbs. ON by default — hiding it left the agent unable to do most of
+   *  Linear. TSFORGE_LINEAR_RAW=0 hides it for a smaller tool list. */
+  linearRaw: (): boolean => notOff(ENV_FLAG.linearRaw),
   /** Kill-switch for the `notion` capability (notion_read / notion_write); on iff a
    *  `notion` MCP server is configured + connected. */
   noNotion: (): boolean => isOn(ENV_FLAG.noNotion),
-  /** Re-expose the raw `mcp__notion__*` tools alongside the curated verbs. */
-  notionRaw: (): boolean => isOn(ENV_FLAG.notionRaw),
+  /** Offer the full `mcp__notion__*` toolset alongside the curated verbs. ON
+   *  by default; TSFORGE_NOTION_RAW=0 hides it. */
+  notionRaw: (): boolean => notOff(ENV_FLAG.notionRaw),
   /** Kill-switch for the `twenty` capability (twenty_read / twenty_write); on iff a
    *  `twenty` MCP server is configured + connected. */
   noTwenty: (): boolean => isOn(ENV_FLAG.noTwenty),
-  /** Re-expose the raw `mcp__twenty__*` tools alongside the curated verbs. */
-  twentyRaw: (): boolean => isOn(ENV_FLAG.twentyRaw),
+  /** Offer the full `mcp__twenty__*` toolset alongside the curated verbs. ON
+   *  by default; TSFORGE_TWENTY_RAW=0 hides it. */
+  twentyRaw: (): boolean => notOff(ENV_FLAG.twentyRaw),
   /** Kill-switch for the `chatwoot` capability (chatwoot_read / chatwoot_write). */
   noChatwoot: (): boolean => isOn(ENV_FLAG.noChatwoot),
   /** Chatwoot instance URL, e.g. https://support.example.com. "" when unset. */
@@ -103,8 +110,9 @@ export const flags = {
   /** Kill-switch for the `sentry` capability (sentry_read / sentry_write); on iff a
    *  `sentry` MCP server is configured + connected. */
   noSentry: (): boolean => isOn(ENV_FLAG.noSentry),
-  /** Re-expose the raw `mcp__sentry__*` tools alongside the curated verbs. */
-  sentryRaw: (): boolean => isOn(ENV_FLAG.sentryRaw),
+  /** Offer the full `mcp__sentry__*` toolset alongside the curated verbs. ON
+   *  by default; TSFORGE_SENTRY_RAW=0 hides it. */
+  sentryRaw: (): boolean => notOff(ENV_FLAG.sentryRaw),
   /** Kill-switch for the post-work agent review phase (auto review after a task
    *  goes green). On by default; set TSFORGE_NO_REVIEW=1 to skip it — used by eval
    *  sweeps (determinism/cost) and any run that doesn't want the extra pass. */
