@@ -23,15 +23,15 @@ Add an `mcpServers` block to `tsforge.config.json` at your repo root. An entry i
 }
 ```
 
-| Field | Required | Notes |
-| --- | --- | --- |
-| `command` | yes (stdio) | Executable to spawn |
-| `args` | no | Arguments for `command` |
-| `env` | no | Extra env vars (merged over the parent env); `${VAR}` interpolated |
-| `type` | no | `stdio` (default) or `http` |
-| `url` | yes (http) | The server's MCP endpoint, e.g. `https://crm.example.com/mcp` |
-| `headers` | no (http) | Headers sent on every request, e.g. `{ "Authorization": "Bearer …" }`; `${VAR}` interpolated |
-| `timeoutMs` | no | Per-call timeout (default 30000) |
+| Field       | Required    | Notes                                                                                        |
+| ----------- | ----------- | -------------------------------------------------------------------------------------------- |
+| `command`   | yes (stdio) | Executable to spawn                                                                          |
+| `args`      | no          | Arguments for `command`                                                                      |
+| `env`       | no          | Extra env vars (merged over the parent env); `${VAR}` interpolated                           |
+| `type`      | no          | `stdio` (default) or `http`                                                                  |
+| `url`       | yes (http)  | The server's MCP endpoint, e.g. `https://crm.example.com/mcp`                                |
+| `headers`   | no (http)   | Headers sent on every request, e.g. `{ "Authorization": "Bearer …" }`; `${VAR}` interpolated |
+| `timeoutMs` | no          | Per-call timeout (default 30000)                                                             |
 
 ### Global servers (`~/.tsforge/models.json`)
 
@@ -40,10 +40,16 @@ An `mcpServers` block also works in the global model registry, `~/.tsforge/model
 ```json title="~/.tsforge/models.json"
 {
   "active": "...",
-  "models": { "...": { } },
+  "models": { "...": {} },
   "mcpServers": {
-    "linear": { "command": "npx", "args": ["-y", "mcp-remote", "https://mcp.linear.app/sse"] },
-    "sentry": { "command": "npx", "args": ["-y", "mcp-remote", "https://mcp.sentry.dev/sse"] }
+    "linear": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.linear.app/sse"]
+    },
+    "sentry": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.sentry.dev/sse"]
+    }
   }
 }
 ```
@@ -85,7 +91,10 @@ Hosted servers that sign you in through a browser (OAuth), like Linear's, Notion
 ```json
 {
   "mcpServers": {
-    "linear": { "command": "npx", "args": ["-y", "mcp-remote", "https://mcp.linear.app/sse"] }
+    "linear": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.linear.app/sse"]
+    }
   }
 }
 ```
@@ -96,6 +105,7 @@ MCP fits tsforge's deterministic, local-first design as an **opt-in context sour
 
 - MCP tools **never touch your editable scope** and **cannot satisfy or bypass the acceptance gate**. They add context, they don't certify "done".
 - Because they don't write the workspace, they remain available in **plan mode** (e.g. look up docs while planning).
+- A stdio server's own logging (its stderr, e.g. `mcp-remote`'s `[Local→Remote] tools/call` lines) **never reaches your terminal**. It goes to the debug trace (`TSFORGE_TRACE`), and if the server dies, its last lines appear in the error message.
 - A server that fails to connect, crashes, or times out is **reported and skipped**. It can never block a session from starting or wedge the loop. A failed tool call comes back as an error string the model can react to.
 
 ## Limits today

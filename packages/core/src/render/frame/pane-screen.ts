@@ -172,6 +172,14 @@ export class PaneScreen {
     return this.entered;
   }
 
+  /** Told when the pane takes the screen (true) and gives it back (false) —
+   *  the REPL engages its TerminalGuard for exactly that window. */
+  private activityListener: ((active: boolean) => void) | null = null;
+
+  setActivityListener(listener: ((active: boolean) => void) | null): void {
+    this.activityListener = listener;
+  }
+
   get focusState(): PaneFocus {
     return this.focus;
   }
@@ -205,6 +213,7 @@ export class PaneScreen {
     this.entered = true;
     this.everEntered = true;
     this.prevLines = null;
+    this.activityListener?.(true);
 
     if (PERF_ENABLED) {
       armStallProbe();
@@ -246,6 +255,7 @@ export class PaneScreen {
         EXIT_ALT
     );
     this.entered = false;
+    this.activityListener?.(false);
     this.prevLines = null;
     this.cursor.reset();
     this.panelOffset = 0;

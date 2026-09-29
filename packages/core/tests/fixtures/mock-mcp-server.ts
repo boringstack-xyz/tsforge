@@ -19,6 +19,14 @@ function argText(params: unknown): string {
 }
 
 function handle(message: unknown): void {
+  // Chatty mode (opt-in via env): log every message to stderr the way
+  // mcp-remote does, to prove the transport never lets it reach the terminal.
+  if (process.env.MOCK_MCP_STDERR === "1" && isRecord(message)) {
+    process.stderr.write(
+      `[4242] [Local\u2192Remote] ${String(message.method)}\n`
+    );
+  }
+
   if (!isRecord(message) || typeof message.id !== "number") {
     return; // notification or junk — no response
   }
@@ -57,6 +65,7 @@ function handle(message: unknown): void {
     // a server that dies mid-session. Exercises the transport's connection-closed
     // handling — the in-flight request must fail fast, not wait out its timeout.
     if (process.env.MOCK_MCP_CRASH_ON_CALL === "1") {
+      process.stderr.write("fatal: \u001b[31mOAuth token expired\u001b[0m\n");
       process.exit(1);
     }
 

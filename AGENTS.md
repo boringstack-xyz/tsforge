@@ -56,6 +56,14 @@ Remote: https://github.com/boringstack-xyz/tsforge
   matches nothing fails silently, so `grep` the new text before writing it into
   a commit message. Four commits in one session described fixes that were never
   in the file.
+- **While the pane UI is up, only the renderer writes to the terminal.** A raw
+  write paints over the frame; this leaked three times (jsdom warnings, library
+  `console.error`, MCP servers' stderr). Show UI text through `echo`/`streamOut`,
+  never `process.stdout.write`. Never let a child process inherit stdout/stderr:
+  Bun.spawn's default stderr is `"inherit"`, so always set it (`"pipe"` and
+  drain, or `"ignore"`). `TerminalGuard` diverts in-process strays at runtime;
+  `tests/terminal-ownership.test.ts` rejects inheriting spawns;
+  `scripts/e2e-terminal-ownership-pty.py` drives the real UI with noisy parts.
 - **Scripts orchestrate; `src/` decides.** A file in `scripts/` is an entry
   point — parse args, call into `src/`, print. Any function it would be a bug to
   get wrong belongs in `src/`, where a test can import it. The graded score
