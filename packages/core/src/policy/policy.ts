@@ -384,7 +384,8 @@ function criticalDeny(
   }
 
   if (
-    action.kind === "mcp_tool" &&
+    // Any call that came in as mcp__<server>__… — a generic mcp_tool or an
+    // integration read/write — must name a server that is actually registered.
     action.mcpServer !== undefined &&
     // Undefined ⇒ no MCP servers configured ⇒ NO mcp tool is registered, so any
     // `mcp__*` call must be denied (not waved through to the mode default).

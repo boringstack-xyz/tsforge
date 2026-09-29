@@ -59,6 +59,7 @@ import {
   TWENTY_DRIVE_GUIDANCE,
   CHATWOOT_READ_TOOL,
   CHATWOOT_WRITE_TOOL,
+  CHATWOOT_API_TOOL,
   CHATWOOT_MARKER,
   CHATWOOT_DRIVE_GUIDANCE,
   BROWSER_MARKER,
@@ -2827,7 +2828,11 @@ export class Session {
     }
 
     this.ctx.tool.chatwoot = true;
-    this.addIntegrationTools([CHATWOOT_READ_TOOL, CHATWOOT_WRITE_TOOL]);
+    this.addIntegrationTools([
+      CHATWOOT_READ_TOOL,
+      CHATWOOT_WRITE_TOOL,
+      CHATWOOT_API_TOOL,
+    ]);
     this.guideOnce(CHATWOOT_MARKER, CHATWOOT_DRIVE_GUIDANCE);
 
     return true;

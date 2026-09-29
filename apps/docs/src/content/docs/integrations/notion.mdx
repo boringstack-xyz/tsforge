@@ -35,9 +35,9 @@ Pages tsforge writes are for a human reader — the intent and the context, not 
 
 Reads are available in every mode, including [plan mode](/cli/plan-mode/). Writes follow capability-as-consent: allowed interactively, denied while planning or running unattended. See [Permissions & policy](/guardrails/policy/).
 
-| Variable | Default | Effect |
-| --- | --- | --- |
-| `TSFORGE_NO_NOTION` | off | withhold the Notion tools even when the server is connected (`=1`) |
-| `TSFORGE_NOTION_RAW` | off | also advertise the raw `mcp__notion__*` tools alongside the curated verbs (`=1`) |
+| Variable             | Default | Effect                                                                   |
+| -------------------- | ------- | ------------------------------------------------------------------------ |
+| `TSFORGE_NO_NOTION`  | off     | withhold the Notion tools even when the server is connected (`=1`)       |
+| `TSFORGE_NOTION_RAW` | on      | `=0` hides the full `mcp__notion__*` toolset, leaving only the shortcuts |
 
 → [MCP servers](/integrations/mcp/) · [Sentry](/integrations/sentry/) · [Environment variables](/reference/flags/)

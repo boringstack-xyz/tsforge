@@ -32,27 +32,27 @@ Twenty's MCP server offers about 300 generated tools behind a catalog the model 
 
 **`twenty_read`** (read-only). `type` is `person`, `company`, `opportunity`, `task` or `note`.
 
-| op | What it returns |
-| --- | --- |
-| `search` | records matching `query`: names and emails for people, name or domain for companies, titles for deals, tasks and notes |
-| `list` | the most recently updated records (`limit`, default 10, max 50) |
-| `record` | one record by `id`, with the notes and tasks attached to it |
-| `pipeline` | opportunities counted and summed by stage |
+| op         | What it returns                                                                                                        |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `search`   | records matching `query`: names and emails for people, name or domain for companies, titles for deals, tasks and notes |
+| `list`     | the most recently updated records (`limit`, default 10, max 50)                                                        |
+| `record`   | one record by `id`, with the notes and tasks attached to it                                                            |
+| `pipeline` | opportunities counted and summed by stage                                                                              |
 
 Every row ends with the record's id in parentheses. That id is what `record`, `update`, `note` and `task` take.
 
 **`twenty_write`**:
 
-| op | What it does |
-| --- | --- |
+| op       | What it does                                                                                                                                                                                                         |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `create` | a person (`firstName`, `lastName`, `email`, `phone`, `jobTitle`, `companyId`), a company (`name`, `domain`) or an opportunity (`name`, `stage`, `amount` + `currency`, `closeDate`, `companyId`, `pointOfContactId`) |
-| `update` | `type` + `id` + only the fields to change |
-| `note` | `title` + `body` (markdown); add `type` + `id` to attach it to that person, company or deal |
-| `task` | `title`, optional `body`, `dueAt`, `status` (`TODO`, `IN_PROGRESS`, `DONE`); `type` + `id` to attach it |
+| `update` | `type` + `id` + only the fields to change                                                                                                                                                                            |
+| `note`   | `title` + `body` (markdown); add `type` + `id` to attach it to that person, company or deal                                                                                                                          |
+| `task`   | `title`, optional `body`, `dueAt`, `status` (`TODO`, `IN_PROGRESS`, `DONE`); `type` + `id` to attach it                                                                                                              |
 
 Amounts are whole currency units (`5000` means 5,000). tsforge converts them to the micros Twenty stores. A new deal starts at stage `NEW` unless you pass one.
 
-There is **no delete**. If a record needs to go, the agent tells you.
+For everything else (deleting records, other objects, custom fields, filtered lists, workflows, dashboards, email), the agent also has **Twenty's full toolset**: it finds a tool with `mcp__twenty__get_tool_catalog`, learns its inputs with `learn_tools`, and runs it with `execute_tool`. Each `execute_tool` call counts as a read or a write by the tool it runs (`find_many_people` reads, `delete_one_company` writes). Deletes are soft: the record moves to Twenty's trash.
 
 ## Things worth knowing
 
@@ -63,10 +63,10 @@ There is **no delete**. If a record needs to go, the agent tells you.
 
 Reads work in every mode, including [plan mode](/cli/plan-mode/). Writes follow capability as consent: allowed in an interactive session, held back while planning or running unattended. See [Permissions & policy](/guardrails/policy/).
 
-| Variable | Default | Effect |
-| --- | --- | --- |
-| `TSFORGE_NO_TWENTY` | off | withhold the Twenty tools even when the server is connected (`=1`) |
-| `TSFORGE_TWENTY_RAW` | off | also advertise Twenty's raw `mcp__twenty__*` meta-tools (`=1`) |
+| Variable             | Default | Effect                                                                     |
+| -------------------- | ------- | -------------------------------------------------------------------------- |
+| `TSFORGE_NO_TWENTY`  | off     | withhold the Twenty tools even when the server is connected (`=1`)         |
+| `TSFORGE_TWENTY_RAW` | on      | `=0` hides Twenty's raw `mcp__twenty__*` tools, leaving only the shortcuts |
 
 ## Checking it against your instance
 

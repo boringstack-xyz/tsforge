@@ -28,23 +28,26 @@ With all three set, an interactive session shows `chatwoot: on · support inbox 
 
 **`chatwoot_read`** (read-only):
 
-| op | What it returns |
-| --- | --- |
-| `conversations` | the inbox. `status` is `open` (default), `pending`, `resolved`, `snoozed` or `all`; `assignee` is `me`, `unassigned` or `all`; plus `inbox` and `page`. Each row shows the customer, assignee, unread count, labels and the last message |
-| `conversation` | one conversation `id` (the number in `#123`) with its messages in order: customer, agent, private notes and activity |
-| `contacts` | people matching `query` (name, email or phone) |
-| `contact` | one contact `id` with their attributes and conversations |
-| `inboxes`, `agents`, `labels` | lookups for filtering and assigning |
+| op                            | What it returns                                                                                                                                                                                                                          |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `conversations`               | the inbox. `status` is `open` (default), `pending`, `resolved`, `snoozed` or `all`; `assignee` is `me`, `unassigned` or `all`; plus `inbox` and `page`. Each row shows the customer, assignee, unread count, labels and the last message |
+| `conversation`                | one conversation `id` (the number in `#123`) with its messages in order: customer, agent, private notes and activity                                                                                                                     |
+| `contacts`                    | people matching `query` (name, email or phone)                                                                                                                                                                                           |
+| `contact`                     | one contact `id` with their attributes and conversations                                                                                                                                                                                 |
+| `inboxes`, `agents`, `labels` | lookups for filtering and assigning                                                                                                                                                                                                      |
 
 **`chatwoot_write`** on a conversation `id`:
 
-| op | What it does |
-| --- | --- |
-| `reply` | sends `body` **to the customer, immediately** |
-| `note` | adds a **private** note (`body`) that only agents see |
-| `status` | sets `open`, `pending`, `resolved` or `snoozed` |
-| `assign` | assigns to `"me"`, or an agent by id, name or email (a name that matches more than one agent is refused) |
-| `label` | adds `labels`; existing labels are kept |
+| op        | What it does                                                                                             |
+| --------- | -------------------------------------------------------------------------------------------------------- |
+| `reply`   | sends `body` **to the customer, immediately**                                                            |
+| `note`    | adds a **private** note (`body`) that only agents see                                                    |
+| `status`  | sets `open`, `pending`, `resolved` or `snoozed`                                                          |
+| `assign`  | assigns to `"me"`, or an agent by id, name or email (a name that matches more than one agent is refused) |
+| `label`   | adds `labels`; existing labels are kept                                                                  |
+| `unlabel` | removes `labels`; the rest are kept                                                                      |
+
+**`chatwoot_api`** covers everything else in the [Chatwoot API](https://developers.chatwoot.com/api-reference/introduction): create, update or delete contacts, start a conversation, canned responses, teams, custom attributes, macros, reports. It takes a `method`, a `path` relative to your account (`/contacts`, `/conversations/12/messages`) or an absolute API path (`/api/v1/profile`), and an optional JSON `body`. A `GET` counts as a read; every other method is a write, held back while planning or running unattended like `chatwoot_write`. The path can only reach your own instance: no other host, no `..`.
 
 ## Replies reach real people
 
@@ -58,12 +61,12 @@ For safety, tsforge never follows an HTTP redirect with your token. A token that
 
 With [Twenty](/integrations/twenty/) connected too, the agent can look the customer up in the CRM while it reads their conversation, and log the outcome as a note on their person record.
 
-| Setting / variable | Effect |
-| --- | --- |
-| `chatwootUrl` / `TSFORGE_CHATWOOT_URL` | your Chatwoot instance |
-| `chatwootToken` / `TSFORGE_CHATWOOT_TOKEN` | your access token |
-| `chatwootAccountId` / `TSFORGE_CHATWOOT_ACCOUNT_ID` | the account to work in |
-| `TSFORGE_NO_CHATWOOT` | withhold the Chatwoot tools even when configured (`=1`) |
+| Setting / variable                                  | Effect                                                  |
+| --------------------------------------------------- | ------------------------------------------------------- |
+| `chatwootUrl` / `TSFORGE_CHATWOOT_URL`              | your Chatwoot instance                                  |
+| `chatwootToken` / `TSFORGE_CHATWOOT_TOKEN`          | your access token                                       |
+| `chatwootAccountId` / `TSFORGE_CHATWOOT_ACCOUNT_ID` | the account to work in                                  |
+| `TSFORGE_NO_CHATWOOT`                               | withhold the Chatwoot tools even when configured (`=1`) |
 
 ## Checking it against your instance
 

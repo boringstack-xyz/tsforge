@@ -15,7 +15,8 @@ export interface IIntegrationCaps {
   twenty?: boolean;
 }
 
-/** The per-integration "expose the raw tools anyway" escape hatch. */
+/** Whether each integration's full raw toolset is offered (default yes;
+ *  TSFORGE_<NAME>_RAW=0 hides it behind the curated verbs). */
 const RAW_FLAG: Record<(typeof INTEGRATION_SERVERS)[number], () => boolean> = {
   linear: () => flags.linearRaw(),
   notion: () => flags.notionRaw(),
@@ -25,7 +26,9 @@ const RAW_FLAG: Record<(typeof INTEGRATION_SERVERS)[number], () => boolean> = {
 
 /**
  * The server keys whose raw `mcp__<server>__*` tools should be hidden from the
- * model — a curated capability is ON for it and its raw escape hatch is not set.
+ * model — a curated capability is ON for it and the user switched its raw
+ * toolset off (TSFORGE_<NAME>_RAW=0). By default nothing is hidden: the curated
+ * verbs are shortcuts, not a cap on what the agent can do.
  * Fed to {@link suppressCuratedSchemas} so the model sees the curated verbs, not the
  * dozens of raw tools underneath.
  */

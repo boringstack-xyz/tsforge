@@ -94,22 +94,29 @@ test("suppressCuratedSchemas trims only the named servers", () => {
   expect(suppressCuratedSchemas(schemas, [])).toHaveLength(3);
 });
 
-test("suppressedIntegrationServers reflects caps AND the raw escape hatch", () => {
-  // all three on → all suppressed
+test("suppressedIntegrationServers: full toolsets are offered by default", () => {
+  // The curated verbs are shortcuts, not a cap: with every capability on,
+  // nothing is hidden — hiding it left the agent unable to do most of Linear.
   expect(
     suppressedIntegrationServers({
       linear: true,
       notion: true,
       sentry: true,
-    }).sort()
-  ).toEqual(["linear", "notion", "sentry"]);
+      twenty: true,
+    })
+  ).toEqual([]);
 
-  // a raw flag re-exposes just that server (drops it from the suppress list)
-  process.env.TSFORGE_NOTION_RAW = "1";
+  // TSFORGE_<NAME>_RAW=0 opts one server back into curated-only
+  process.env.TSFORGE_NOTION_RAW = "0";
   expect(
     suppressedIntegrationServers({ linear: true, notion: true, sentry: true })
-  ).not.toContain("notion");
+  ).toEqual(["notion"]);
+
+  // any other value keeps it offered
+  process.env.TSFORGE_NOTION_RAW = "1";
+  expect(suppressedIntegrationServers({ notion: true })).toEqual([]);
 
   // off capabilities are never suppressed
+  process.env.TSFORGE_NOTION_RAW = "0";
   expect(suppressedIntegrationServers({})).toEqual([]);
 });

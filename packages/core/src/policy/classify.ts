@@ -2,6 +2,7 @@ import { TOOL_NAME, fileArgCandidates } from "../agent";
 import type { IToolCall } from "../inference";
 import { normalizeWorkspacePath } from "../lib/scope";
 import type { ActionKind, IProposedAction } from "./policy.types";
+import { integrationMcpKind } from "./mcp-kind";
 
 /** Tool name → what it actually does. Tools absent here (or any future/forged
  *  name) classify as `unknown`, which the policy never silently allows. MCP
@@ -196,6 +197,14 @@ function extractCommand(
   return undefined;
 }
 
+/** chatwoot_api reaches any endpoint: a GET only reads, anything else writes. */
+function chatwootApiKind(args: Record<string, unknown>): ActionKind {
+  const method =
+    typeof args.method === "string" ? args.method.toUpperCase() : "";
+
+  return method === "GET" ? "integration_read" : "integration_write";
+}
+
 /**
  * Reduce a tool call to an `IProposedAction` the policy can evaluate. Reuses the
  * existing `normalizeWorkspacePath` so policy sees the same path form the write
@@ -206,16 +215,23 @@ export function classifyAction(call: IToolCall, cwd: string): IProposedAction {
   const args = call.arguments;
 
   if (call.name.startsWith("mcp__")) {
+    const [, server = "", ...rest] = call.name.split("__");
+
     return {
-      kind: "mcp_tool",
+      // A tracker integration's raw tool is a read or a write like its
+      // curated verbs; any other server's tool stays a generic mcp_tool.
+      kind: integrationMcpKind(server, rest.join("__"), args) ?? "mcp_tool",
       toolName: call.name,
       input: args,
       cwd,
-      mcpServer: call.name.split("__")[1] ?? "",
+      mcpServer: server,
     };
   }
 
-  const kind = KIND_BY_TOOL[call.name] ?? "unknown";
+  const kind =
+    call.name === TOOL_NAME.chatwootApi
+      ? chatwootApiKind(args)
+      : (KIND_BY_TOOL[call.name] ?? "unknown");
   const paths = extractPaths(args, cwd);
   const command = extractCommand(call.name, args);
 

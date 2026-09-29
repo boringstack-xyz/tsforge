@@ -126,6 +126,7 @@ import {
   SENTRY_WRITE_TOOL,
   CHATWOOT_READ_TOOL,
   CHATWOOT_WRITE_TOOL,
+  CHATWOOT_API_TOOL,
   TWENTY_READ_TOOL,
   TWENTY_WRITE_TOOL,
   READ_IMAGE_TOOL,
@@ -237,6 +238,7 @@ type AdvertisedTool =
   | typeof SENTRY_WRITE_TOOL
   | typeof CHATWOOT_READ_TOOL
   | typeof CHATWOOT_WRITE_TOOL
+  | typeof CHATWOOT_API_TOOL
   | typeof TWENTY_READ_TOOL
   | typeof TWENTY_WRITE_TOOL
   | typeof READ_IMAGE_TOOL
@@ -357,7 +359,7 @@ function twentyTools(caps: ICapabilityFlags): AdvertisedTool[] {
  *  Read is plan-safe; writes (a customer-visible reply among them) are gated. */
 function chatwootTools(caps: ICapabilityFlags): AdvertisedTool[] {
   return caps.chatwoot === true
-    ? [CHATWOOT_READ_TOOL, CHATWOOT_WRITE_TOOL]
+    ? [CHATWOOT_READ_TOOL, CHATWOOT_WRITE_TOOL, CHATWOOT_API_TOOL]
     : [];
 }
 

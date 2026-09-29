@@ -26,8 +26,16 @@ The server **must be keyed exactly `linear`**. Once it connects, an interactive 
 
 ## The tools
 
+The agent has **all of Linear's MCP tools** (`mcp__linear__*`): everything a person can do in Linear through its API.
+
+- **Issues**: `save_issue` creates an issue, or with an `id` updates any field: title, description, status, priority, assignee, labels, project, milestone, cycle, estimate, due date, parent, duplicate-of. Moving an issue to another project or team is an update.
+- **Projects, milestones, labels, documents, status updates**: `save_project`, `save_milestone`, `save_issue_label`, `save_document` and `save_status_update` create and update them, and `list_*` / `get_*` find them.
+- **What Linear itself doesn't offer**: there is no tool to delete an issue (cancel it, or mark it a duplicate of the original). Initiatives appear only if your Linear plan includes them.
+
+On top of that, three shortcuts:
+
 - **`linear_read`** (read-only): `issue` (one card by identifier like `ENG-123` — title, state, description, the **branch name** Linear generated, and links), `search`, `mine` (your assigned issues), and `comments`.
-- **`linear_write`**: `create` (a new card with a `title` and the `team` to file it under, by key like `ENG`, name or id; returns its identifier and branch name) and `comment` (adds a comment to a card by its identifier). There is deliberately **no status op**: Linear moves the card itself when the linked PR opens and merges.
+- **`linear_write`**: quick `create` (a `title` and the `team` to file it under, by key like `ENG`, name or id; returns its identifier and branch name) and `comment` (on a card by its identifier).
 - **`linear_start`**: the one-step start — read a card by id and **check out the git branch** Linear made for it (creating it if needed). Edit as usual, then open a PR referencing the issue (e.g. `Fixes ENG-123`); Linear links the branch and transitions the card for you.
 
 ## Cards written for humans
@@ -36,11 +44,11 @@ The server **must be keyed exactly `linear`**. Once it connects, an interactive 
 
 ## When they're active
 
-Reads are available in every mode, including [plan mode](/cli/plan-mode/). Writes (`create`, `comment`, and `linear_start`'s checkout) follow capability-as-consent: allowed interactively, denied while planning or running unattended. See [Permissions & policy](/guardrails/policy/).
+Reads (the shortcuts and every `get_`/`list_`/`search` tool) are available in every mode, including [plan mode](/cli/plan-mode/). Writes (every other Linear tool, and `linear_start`'s checkout) follow capability-as-consent: allowed interactively, denied while planning or running unattended. See [Permissions & policy](/guardrails/policy/).
 
-| Variable | Default | Effect |
-| --- | --- | --- |
-| `TSFORGE_NO_LINEAR` | off | withhold the Linear tools even when the server is connected (`=1`) |
-| `TSFORGE_LINEAR_RAW` | off | also advertise the raw `mcp__linear__*` tools alongside the curated verbs (`=1`) |
+| Variable             | Default | Effect                                                                   |
+| -------------------- | ------- | ------------------------------------------------------------------------ |
+| `TSFORGE_NO_LINEAR`  | off     | withhold the Linear tools even when the server is connected (`=1`)       |
+| `TSFORGE_LINEAR_RAW` | on      | `=0` hides the full `mcp__linear__*` toolset, leaving only the shortcuts |
 
 → [MCP servers](/integrations/mcp/) · [Git & GitHub](/integrations/git-github/) · [Environment variables](/reference/flags/)
