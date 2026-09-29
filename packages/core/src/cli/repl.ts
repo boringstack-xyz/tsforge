@@ -155,6 +155,7 @@ import {
 import { setMcpDiagnosticSink } from "../mcp";
 import { trace } from "../lib/trace";
 import { divertStrayConsole } from "./stray-console";
+import { TerminalGuard } from "./terminal-guard";
 import { saveUserSetting } from "../config/user-settings";
 import {
   setBootHeadline,
@@ -2444,8 +2445,30 @@ export async function repl(args: ICliArgs): Promise<number> {
     };
   };
 
-  // Pane console — the only interactive UI on a TTY.
-  const paneScreen = new PaneScreen(process.stdout);
+  // Pane console — the only interactive UI on a TTY. While it owns the screen,
+  // the TerminalGuard lets only the renderer (and the few deliberate raw
+  // writers below, via `terminalGuard.terminal`) reach the terminal: any other
+  // stdout write becomes transcript text, stderr and library console noise go
+  // to the debug trace.
+  const terminalGuard = new TerminalGuard({
+    stdout: process.stdout,
+    stderr: process.stderr,
+    onStdout: (text) => {
+      paneScreen.appendMain(text);
+    },
+    onStderr: (text) => {
+      trace("stderr", text.trimEnd());
+    },
+  });
+  const paneScreen = new PaneScreen(terminalGuard.terminal);
+
+  paneScreen.setActivityListener((active) => {
+    if (active) {
+      terminalGuard.engage();
+    } else {
+      terminalGuard.release();
+    }
+  });
   const tuiKeybindings = resolveTuiKeybindings(
     parseProjectTuiKeybindings(delegationConfig),
     loadUserTuiKeybindings()
@@ -2727,7 +2750,7 @@ export async function repl(args: ICliArgs): Promise<number> {
 
   /** Raw terminal modes (bracketed paste, kitty keys) — never transcript. */
   const writeTerm = (text: string): void => {
-    process.stdout.write(text);
+    terminalGuard.terminal.write(text);
   };
 
   // --- live agent tree ------------------------------------------------------
@@ -3450,7 +3473,7 @@ export async function repl(args: ICliArgs): Promise<number> {
                 cwd: args.dir,
                 suspend,
                 resume,
-                out: (s) => process.stdout.write(s),
+                out: (s) => terminalGuard.terminal.write(s),
                 columns: transcriptCols(),
                 viewportRows: overlayBudget(),
               }).then(async (dest) => {
@@ -3468,7 +3491,7 @@ export async function repl(args: ICliArgs): Promise<number> {
                 },
                 columns: transcriptCols(),
                 viewportRows: overlayBudget(),
-                out: (s) => process.stdout.write(s),
+                out: (s) => terminalGuard.terminal.write(s),
                 runRecipe: (recipe) => {
                   if (recipe.gate !== undefined) {
                     session.setGate(recipe.gate);

@@ -6,6 +6,7 @@ import {
   DEFAULT_TIMEOUT_MS,
   PROTOCOL_VERSION,
 } from "./tool-result";
+import { StderrTail, drainStderr } from "./stderr-tail";
 import type {
   IMcpServerConfig,
   IMcpToolInfo,
@@ -24,7 +25,9 @@ interface IPending {
  * by id, and enforces a per-call timeout so a hung server cannot stall the loop.
  */
 export class StdioMcpTransport implements IMcpTransport {
-  private proc: Bun.Subprocess<"pipe", "pipe", "inherit"> | null = null;
+  private proc: Bun.Subprocess<"pipe", "pipe", "pipe"> | null = null;
+  /** The server's stderr — captured, never inherited (see StderrTail). */
+  private readonly stderr: StderrTail;
   private readonly decoder = new LineDecoder();
   private readonly pending = new Map<number, IPending>();
   private readonly timeoutMs: number;
@@ -39,6 +42,7 @@ export class StdioMcpTransport implements IMcpTransport {
     private readonly config: IMcpServerConfig
   ) {
     this.timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    this.stderr = new StderrTail(name);
   }
 
   async connect(): Promise<void> {
@@ -51,20 +55,33 @@ export class StdioMcpTransport implements IMcpTransport {
       env: { ...process.env, ...(this.config.env ?? {}) },
       stdin: "pipe",
       stdout: "pipe",
-      stderr: "inherit",
+      // Piped and drained, never inherited: an inherited stderr paints the
+      // server's own logging over the interactive UI.
+      stderr: "pipe",
     });
 
     this.proc = proc;
+
+    const stderrDone = drainStderr(proc.stderr, this.stderr);
+
     // Fire-and-forget, but NOT swallowed: when the read loop ends — stdout closed
     // on a clean exit, or a read error on a crash — fail every in-flight request
     // immediately with a clear "connection closed", rather than letting each one
     // wait out its 30s timeout and surface a misleading "timed out".
     void this.readLoop(proc.stdout)
       .catch(() => undefined)
+      .then(async () => {
+        // A dying server's last stderr lines can land just after stdout closes;
+        // give them a moment so the error can say why.
+        await Promise.race([stderrDone, Bun.sleep(100)]);
+      })
       .finally(() => {
         this.connectionClosed = true;
+
+        const why = this.stderr.text();
+
         this.failAllPending(
-          `MCP server '${this.name}' connection closed unexpectedly`
+          `MCP server '${this.name}' connection closed unexpectedly${why.length > 0 ? `: ${why}` : ""}`
         );
       });
 

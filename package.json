@@ -14,7 +14,7 @@
     "test": "bun test packages",
     "check:bun": "bun packages/core/scripts/check-bun-version.ts",
     "e2e": "python3 scripts/e2e-iterm-tui.py && python3 scripts/e2e-iterm-plan-mode.py",
-    "e2e:pty": "python3 scripts/e2e-pty.py && python3 scripts/e2e-wizard-pty.py && python3 scripts/e2e-config-repl-pty.py && python3 scripts/e2e-help-menu-pty.py && python3 scripts/e2e-scaffold-command-pty.py && python3 scripts/e2e-editor-pty.py && python3 scripts/e2e-agents-pty.py && python3 scripts/e2e-spawn-agent-pty.py && python3 scripts/e2e-inference-pathological-pty.py && python3 scripts/e2e-reviewfix-pty.py && python3 scripts/e2e-phaser-plan-pty.py && python3 scripts/e2e-harness-invariants-pty.py",
+    "e2e:pty": "python3 scripts/e2e-pty.py && python3 scripts/e2e-wizard-pty.py && python3 scripts/e2e-config-repl-pty.py && python3 scripts/e2e-help-menu-pty.py && python3 scripts/e2e-scaffold-command-pty.py && python3 scripts/e2e-editor-pty.py && python3 scripts/e2e-agents-pty.py && python3 scripts/e2e-spawn-agent-pty.py && python3 scripts/e2e-inference-pathological-pty.py && python3 scripts/e2e-reviewfix-pty.py && python3 scripts/e2e-phaser-plan-pty.py && python3 scripts/e2e-harness-invariants-pty.py && python3 scripts/e2e-terminal-ownership-pty.py",
     "validate": "bun run check:bun && bun run typecheck && bun run lint && bun run format:check && bun run test && bun run e2e:pty",
     "rules:build": "bun packages/core/scripts/build-rules-md.ts",
     "rules:check": "bun run rules:build && git diff --exit-code packages/core/RULES.md",
