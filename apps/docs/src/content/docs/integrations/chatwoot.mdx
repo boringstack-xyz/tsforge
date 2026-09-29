@@ -1,0 +1,78 @@
+---
+title: Chatwoot
+description: "Let the agent work your Chatwoot support inbox: read conversations, draft replies as private notes, send when you say so, and triage with status, assignment and labels."
+---
+
+[Chatwoot](https://www.chatwoot.com) is an open-source customer support inbox you can host yourself. With it connected, tsforge can read what customers wrote, look people up, draft or send replies, and keep the inbox tidy.
+
+Chatwoot has no MCP server, so tsforge talks to its REST API directly with your access token. It follows the same model as the [MCP integrations](/integrations/mcp/): off until configured, and a small set of purpose-built verbs.
+
+## Turn it on
+
+1. In Chatwoot, click your avatar (bottom left), open **Profile Settings**, and copy the **Access Token** at the bottom of the page.
+2. Put it in `~/.tsforge/config.json` with your instance URL and account id. The account id is the number in the address bar: `…/app/accounts/<id>/…`.
+
+```json title="~/.tsforge/config.json"
+{
+  "settings": {
+    "chatwootUrl": "https://support.example.com",
+    "chatwootAccountId": 1,
+    "chatwootToken": "<your access token>"
+  }
+}
+```
+
+With all three set, an interactive session shows `chatwoot: on · support inbox via REST`. The agent acts as the user who owns the token, so replies go out under that agent's name.
+
+## The tools
+
+**`chatwoot_read`** (read-only):
+
+| op | What it returns |
+| --- | --- |
+| `conversations` | the inbox. `status` is `open` (default), `pending`, `resolved`, `snoozed` or `all`; `assignee` is `me`, `unassigned` or `all`; plus `inbox` and `page`. Each row shows the customer, assignee, unread count, labels and the last message |
+| `conversation` | one conversation `id` (the number in `#123`) with its messages in order: customer, agent, private notes and activity |
+| `contacts` | people matching `query` (name, email or phone) |
+| `contact` | one contact `id` with their attributes and conversations |
+| `inboxes`, `agents`, `labels` | lookups for filtering and assigning |
+
+**`chatwoot_write`** on a conversation `id`:
+
+| op | What it does |
+| --- | --- |
+| `reply` | sends `body` **to the customer, immediately** |
+| `note` | adds a **private** note (`body`) that only agents see |
+| `status` | sets `open`, `pending`, `resolved` or `snoozed` |
+| `assign` | assigns to `"me"`, or an agent by id, name or email (a name that matches more than one agent is refused) |
+| `label` | adds `labels`; existing labels are kept |
+
+## Replies reach real people
+
+A reply can't be unsent, so the agent is told to **send one only when you asked it to reply**. Otherwise it writes its draft as a private note for a human to review and send. Writes are also held back while planning or running unattended, like every integration write. See [Permissions & policy](/guardrails/policy/).
+
+**Customer messages are untrusted input.** Conversation text reaches the model marked as data, and the agent is told never to follow instructions inside a message or paste internal notes, secrets or other customers' details into a reply.
+
+For safety, tsforge never follows an HTTP redirect with your token. A token that stops working comes back as `HTTP 401: Chatwoot rejected the access token`.
+
+## With Twenty
+
+With [Twenty](/integrations/twenty/) connected too, the agent can look the customer up in the CRM while it reads their conversation, and log the outcome as a note on their person record.
+
+| Setting / variable | Effect |
+| --- | --- |
+| `chatwootUrl` / `TSFORGE_CHATWOOT_URL` | your Chatwoot instance |
+| `chatwootToken` / `TSFORGE_CHATWOOT_TOKEN` | your access token |
+| `chatwootAccountId` / `TSFORGE_CHATWOOT_ACCOUNT_ID` | the account to work in |
+| `TSFORGE_NO_CHATWOOT` | withhold the Chatwoot tools even when configured (`=1`) |
+
+## Checking it against your instance
+
+```bash
+TSFORGE_LIVE=1 bun test packages/core/tests/integrations-live.test.ts
+# also add a private note + a label, and toggle status and back, on conversation 42:
+TSFORGE_LIVE=1 TSFORGE_LIVE_CHATWOOT_CONVERSATION=42 bun test packages/core/tests/integrations-live.test.ts
+```
+
+The write run never sends a reply. It restores the conversation's status and labels afterwards; the private note stays, marked as a test.
+
+→ [Twenty CRM](/integrations/twenty/) · [MCP servers](/integrations/mcp/) · [Environment variables](/reference/flags/)

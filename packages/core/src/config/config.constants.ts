@@ -26,6 +26,14 @@ export const ENV_FLAG = {
   notionRaw: "TSFORGE_NOTION_RAW",
   noSentry: "TSFORGE_NO_SENTRY",
   sentryRaw: "TSFORGE_SENTRY_RAW",
+  // Twenty CRM: an MCP integration like Linear (kill-switch + raw passthrough).
+  noTwenty: "TSFORGE_NO_TWENTY",
+  twentyRaw: "TSFORGE_TWENTY_RAW",
+  // Chatwoot support inbox: a REST integration (no MCP) — instance, token, account.
+  noChatwoot: "TSFORGE_NO_CHATWOOT",
+  chatwootUrl: "TSFORGE_CHATWOOT_URL",
+  chatwootToken: "TSFORGE_CHATWOOT_TOKEN",
+  chatwootAccountId: "TSFORGE_CHATWOOT_ACCOUNT_ID",
   // Post-work agent review (auto after a task goes green). On by default; eval
   // sweeps and cost-sensitive headless runs set this to skip the review phase.
   noReview: "TSFORGE_NO_REVIEW",

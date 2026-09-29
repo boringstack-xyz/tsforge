@@ -41,6 +41,44 @@ function fakeRegistry(tools: Record<string, string>): {
   return { reg, calls };
 }
 
+/** The keys each real Linear MCP tool accepts. The hosted server validates with
+ *  `additionalProperties: false`, so any other key fails the whole call with
+ *  "Unrecognized key". */
+const STRICT_KEYS: Record<string, readonly string[]> = {
+  save_issue: ["title", "description", "team", "id"],
+  save_comment: ["body", "issueId", "id", "parentId"],
+  list_comments: ["issueId", "cursor", "limit"],
+  list_issues: ["query", "assignee", "team", "limit"],
+  get_issue: ["id"],
+};
+
+/** A fake that rejects unknown keys the way the hosted Linear MCP does. */
+function strictRegistry(tools: Record<string, string>): {
+  reg: IIntegrationRegistry;
+  calls: { name: string; args: Record<string, unknown> }[];
+} {
+  const { reg, calls } = fakeRegistry(tools);
+
+  return {
+    calls,
+    reg: {
+      has: (name) => reg.has(name),
+      callTool: async (name, args) => {
+        const allowed = STRICT_KEYS[name.replace("mcp__linear__", "")] ?? [];
+        const bad = Object.keys(args).find((k) => !allowed.includes(k));
+
+        if (bad !== undefined) {
+          calls.push({ name, args });
+
+          return `MCP tool ${name} failed: Unrecognized key: ${bad}`;
+        }
+
+        return reg.callTool(name, args);
+      },
+    },
+  };
+}
+
 const deps = (
   reg: IIntegrationRegistry,
   run?: ILinearDeps["run"]
@@ -88,7 +126,7 @@ test("read tolerates a Linear MCP that uses a different create tool name", async
   });
 
   const out = await doLinearWrite(
-    { op: "create", title: "Add a retry to the flaky upload" },
+    { op: "create", title: "Add a retry to the flaky upload", team: "ENG" },
     ctx(),
     deps(reg)
   );
@@ -268,4 +306,83 @@ test("suppressCuratedSchemas drops a suppressed server's raw tools, keeps others
   const trimmed = suppressCuratedSchemas(schemas, ["linear"]);
 
   expect(trimmed.map((s) => s.function.name)).toEqual(["mcp__notion__search"]);
+});
+
+test("create sends `team` only — the hosted save_issue rejects `teamId`", async () => {
+  const { reg, calls } = strictRegistry({
+    save_issue: JSON.stringify({
+      identifier: "TSF-40",
+      branchName: "x/tsf-40",
+    }),
+  });
+
+  const out = await doLinearWrite(
+    { op: "create", title: "Wire the pickup selector", team: "TSF" },
+    ctx(),
+    deps(reg)
+  );
+
+  expect(out).toContain("created TSF-40");
+  expect(calls[0]?.args).toEqual({
+    title: "Wire the pickup selector",
+    team: "TSF",
+  });
+});
+
+test("create without a team fails before calling the server", async () => {
+  const { reg, calls } = strictRegistry({ save_issue: "{}" });
+
+  const out = await doLinearWrite(
+    { op: "create", title: "Wire the pickup selector" },
+    ctx(),
+    deps(reg)
+  );
+
+  expect(out).toContain("needs a `team`");
+  expect(calls.length).toBe(0);
+});
+
+test("comment targets the issue via issueId, never `id` (which edits a comment)", async () => {
+  const { reg, calls } = strictRegistry({ save_comment: "{}" });
+
+  const out = await doLinearWrite(
+    { op: "comment", id: "TSF-20", body: "Tried the new wiring; hum is gone." },
+    ctx(),
+    deps(reg)
+  );
+
+  expect(out).toBe("commented on TSF-20");
+  expect(calls[0]?.args).toEqual({
+    issueId: "TSF-20",
+    body: "Tried the new wiring; hum is gone.",
+  });
+});
+
+test("comments read sends issueId only", async () => {
+  const { reg, calls } = strictRegistry({
+    list_comments: JSON.stringify([{ id: "c1", body: "hi" }]),
+  });
+
+  const out = await doLinearRead(
+    { op: "comments", id: "TSF-20" },
+    ctx(),
+    deps(reg)
+  );
+
+  expect(out).not.toContain("Unrecognized key");
+  expect(calls[0]?.args).toEqual({ issueId: "TSF-20" });
+});
+
+test("mine asks list_issues for assignee 'me' when list_my_issues is absent", async () => {
+  const { reg, calls } = strictRegistry({
+    list_issues: JSON.stringify({
+      issues: [{ identifier: "TSF-31", title: "Mine", status: "Todo" }],
+    }),
+  });
+
+  const out = await doLinearRead({ op: "mine" }, ctx(), deps(reg));
+
+  expect(calls[0]?.args).toEqual({ assignee: "me" });
+  // the hosted server wraps the list under `issues`
+  expect(out).toContain("TSF-31 Mine [Todo]");
 });

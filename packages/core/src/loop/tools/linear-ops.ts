@@ -3,6 +3,7 @@ import { runArgvCommand } from "../../lib/fs";
 import { str, reject, type IToolContext } from "./tool-context";
 import { unsafe, intArg, capHead, pick, type VcsRunner } from "./vcs-common";
 import {
+  asList,
   callFirst,
   field,
   isRecord,
@@ -11,6 +12,7 @@ import {
   resolveMcpCapability,
   type IIntegrationRegistry,
 } from "./integration-common";
+import { mcpToolName } from "../../mcp";
 import { LOOP_LIMITS } from "../loop.constants";
 
 /** The required config key for the Linear MCP server. The curated verbs address
@@ -123,11 +125,11 @@ async function readList(
 
   const parsed = jsonParseSafe(res.text);
 
-  if (!Array.isArray(parsed)) {
+  if (!Array.isArray(parsed) && !isRecord(parsed)) {
     return capHead(res.text, max);
   }
 
-  const rows = parsed
+  const rows = asList(parsed)
     .filter(isRecord)
     .map((r) => {
       const id = field(r, "identifier", "id");
@@ -164,15 +166,16 @@ async function createIssue(
     }
   }
 
-  const payload: Record<string, unknown> = { title };
+  if (team.trim().length === 0) {
+    return "linear_write create: needs a `team` (its key, name or ID, e.g. ENG)";
+  }
+
+  // Only keys the Linear MCP declares: it validates strictly, so any extra key
+  // (e.g. `teamId`) fails the whole call with "Unrecognized key".
+  const payload: Record<string, unknown> = { title, team };
 
   if (description.length > 0) {
     payload.description = description;
-  }
-
-  if (team.length > 0) {
-    payload.team = team;
-    payload.teamId = team;
   }
 
   const res = await callFirst(
@@ -221,7 +224,8 @@ async function commentIssue(
     reg,
     LINEAR_SERVER,
     ["create_comment", "save_comment"],
-    { issueId: id, id, body }
+    // Never `id` here: on save_comment it names a comment to edit.
+    { issueId: id, body }
   );
 
   return "error" in res ? res.error : `commented on ${id}`;
@@ -259,11 +263,13 @@ export async function doLinearRead(
     case "search":
       return readList(reg, ["list_issues"], { query: str(args, "query") }, max);
     case "mine":
-      return readList(reg, ["list_my_issues", "list_issues"], {}, max);
+      return reg.has(mcpToolName(LINEAR_SERVER, "list_my_issues"))
+        ? readList(reg, ["list_my_issues"], {}, max)
+        : readList(reg, ["list_issues"], { assignee: "me" }, max);
     case "comments":
       return id.trim().length === 0
         ? reject(ctx, "linear_read", "comments: needs an issue `id`")
-        : readList(reg, ["list_comments"], { issueId: id, id }, max);
+        : readList(reg, ["list_comments"], { issueId: id }, max);
     default:
       return reject(
         ctx,

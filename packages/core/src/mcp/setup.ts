@@ -1,5 +1,6 @@
-import type { IMcpServerConfig } from "./mcp.types";
+import type { IMcpServerConfig, IMcpTransport } from "./mcp.types";
 import { McpRegistry } from "./registry";
+import { HttpMcpTransport } from "./http-transport";
 import { StdioMcpTransport } from "./stdio-transport";
 
 /** Hard cap on connecting + listing tools for ONE server, independent of that
@@ -22,7 +23,7 @@ const CONNECT_TIMEOUT_MS = 8_000;
 async function addServerWithTimeout(
   registry: McpRegistry,
   name: string,
-  transport: StdioMcpTransport
+  transport: IMcpTransport
 ): Promise<number> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<number>((_resolve, reject) => {
@@ -46,7 +47,7 @@ async function addServerWithTimeout(
  * configured or none connected. Servers connect IN PARALLEL, each bounded by
  * `CONNECT_TIMEOUT_MS` — per-server failures (including a timeout) are reported
  * and skipped so one bad or slow server can never block the run or the others.
- * Only the stdio transport is wired today; http entries are reported and skipped.
+ * `type: "http"` entries use Streamable HTTP; everything else spawns over stdio.
  */
 export async function connectMcpServers(
   servers: Readonly<Record<string, IMcpServerConfig>>,
@@ -68,19 +69,13 @@ export async function connectMcpServers(
         return;
       }
 
-      if (config.type === "http") {
-        report(
-          `MCP server '${name}': http transport not yet supported (stdio only)`
-        );
-
-        return;
-      }
-
       try {
         const count = await addServerWithTimeout(
           registry,
           name,
-          new StdioMcpTransport(name, config)
+          config.type === "http"
+            ? new HttpMcpTransport(name, config)
+            : new StdioMcpTransport(name, config)
         );
 
         report(`MCP server '${name}': ${count} tool(s) registered`);

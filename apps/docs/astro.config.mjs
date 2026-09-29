@@ -203,6 +203,8 @@ export default defineConfig({
             { label: "Linear", link: "/integrations/linear/" },
             { label: "Notion", link: "/integrations/notion/" },
             { label: "Sentry", link: "/integrations/sentry/" },
+            { label: "Twenty CRM", link: "/integrations/twenty/" },
+            { label: "Chatwoot", link: "/integrations/chatwoot/" },
             { label: "Web access", link: "/integrations/web-tools/" },
             { label: "Research in your Chrome", link: "/integrations/chrome/" },
             { label: "Research on Reddit", link: "/integrations/reddit/" },

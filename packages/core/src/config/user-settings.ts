@@ -61,6 +61,21 @@ export const SETTINGS: Readonly<Record<string, ISettingDef>> = {
     kind: "string",
     describe: "Stack Exchange API key (10,000 requests/day)",
   },
+  chatwootUrl: {
+    env: ENV_FLAG.chatwootUrl,
+    kind: "string",
+    describe: "your Chatwoot instance, e.g. https://support.example.com",
+  },
+  chatwootToken: {
+    env: ENV_FLAG.chatwootToken,
+    kind: "string",
+    describe: "Chatwoot access token (Profile settings → Access token)",
+  },
+  chatwootAccountId: {
+    env: ENV_FLAG.chatwootAccountId,
+    kind: "int",
+    describe: "Chatwoot account id (the number in /app/accounts/<id>/)",
+  },
   maxTurns: {
     env: ENV_FLAG.maxTurns,
     kind: "int",

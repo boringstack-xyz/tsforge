@@ -124,6 +124,10 @@ import {
   NOTION_WRITE_TOOL,
   SENTRY_READ_TOOL,
   SENTRY_WRITE_TOOL,
+  CHATWOOT_READ_TOOL,
+  CHATWOOT_WRITE_TOOL,
+  TWENTY_READ_TOOL,
+  TWENTY_WRITE_TOOL,
   READ_IMAGE_TOOL,
   GENERATE_IMAGE_TOOL,
   CHECK_TOOL,
@@ -231,6 +235,10 @@ type AdvertisedTool =
   | typeof NOTION_WRITE_TOOL
   | typeof SENTRY_READ_TOOL
   | typeof SENTRY_WRITE_TOOL
+  | typeof CHATWOOT_READ_TOOL
+  | typeof CHATWOOT_WRITE_TOOL
+  | typeof TWENTY_READ_TOOL
+  | typeof TWENTY_WRITE_TOOL
   | typeof READ_IMAGE_TOOL
   | typeof GENERATE_IMAGE_TOOL
   | typeof CHECK_TOOL
@@ -265,6 +273,13 @@ export interface ICapabilityFlags {
    *  also hard-check `ctx.notion` / `ctx.sentry`. */
   notion?: boolean;
   sentry?: boolean;
+  /** The `chatwoot` capability = consent (chatwootUrl/Token/AccountId configured).
+   *  When on, the Chatwoot verbs are advertised; chatwoot_write hard-checks it. */
+  chatwoot?: boolean;
+  /** The `twenty` capability = consent (a `twenty` MCP server configured +
+   *  connected). When on, the Twenty verbs are advertised; twenty_write
+   *  hard-checks it. */
+  twenty?: boolean;
   /** The Chrome research bridge is listening (TSFORGE_BROWSER, port owned by this
    *  process). When on, the browser_* tools + `note` are advertised. */
   browser?: boolean;
@@ -330,6 +345,20 @@ function notionTools(caps: ICapabilityFlags): AdvertisedTool[] {
  *  plan-safe; the resolve write is gated (integration_write). */
 function sentryTools(caps: ICapabilityFlags): AdvertisedTool[] {
   return caps.sentry === true ? [SENTRY_READ_TOOL, SENTRY_WRITE_TOOL] : [];
+}
+
+/** Twenty CRM verbs — advertised only when the `twenty` capability is on. Read is
+ *  plan-safe; writes gated (integration_write). */
+function twentyTools(caps: ICapabilityFlags): AdvertisedTool[] {
+  return caps.twenty === true ? [TWENTY_READ_TOOL, TWENTY_WRITE_TOOL] : [];
+}
+
+/** Chatwoot inbox verbs — advertised only when the `chatwoot` capability is on.
+ *  Read is plan-safe; writes (a customer-visible reply among them) are gated. */
+function chatwootTools(caps: ICapabilityFlags): AdvertisedTool[] {
+  return caps.chatwoot === true
+    ? [CHATWOOT_READ_TOOL, CHATWOOT_WRITE_TOOL]
+    : [];
 }
 
 /** Chrome research bridge — the user's real browser, read + navigate only.
@@ -398,6 +427,8 @@ export function toolsFor(
   const linear = linearTools(caps);
   const notion = notionTools(caps);
   const sentry = sentryTools(caps);
+  const chatwoot = chatwootTools(caps);
+  const twenty = twentyTools(caps);
   const script = scriptTools();
   const image = imageTools(caps);
   const research = [
@@ -470,6 +501,8 @@ export function toolsFor(
       ...linear,
       ...notion,
       ...sentry,
+      ...chatwoot,
+      ...twenty,
       ...script,
       ...image,
       ...research,
@@ -492,6 +525,8 @@ export function toolsFor(
     ...linear,
     ...notion,
     ...sentry,
+    ...chatwoot,
+    ...twenty,
     ...script,
     ...image,
     ...research,
@@ -569,6 +604,9 @@ export interface ILoopCtxTool {
    *  write handlers hard-check them. See {@link IToolContext.notion}/{@link IToolContext.sentry}. */
   notion?: boolean;
   sentry?: boolean;
+  /** Chatwoot / Twenty capabilities = consent; their write handlers hard-check them. */
+  chatwoot?: boolean;
+  twenty?: boolean;
   /** Files the agent created/edited this session (cwd-relative, forward slashes).
    *  Accumulated by `runToolCalls`; change-scoped meta-rules (test-sibling-required)
    *  enforce on this set, so they cover what the agent wrote regardless of git.

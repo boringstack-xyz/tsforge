@@ -195,7 +195,7 @@ A top-level `mcpServers` block (a sibling of `active`/`models`) configures [MCP 
 }
 ```
 
-A project's own `tsforge.config.json` `mcpServers` entry with the same name overrides this one entirely; entries unique to either side apply together. See [MCP servers](/integrations/mcp/) for the field reference and the curated Linear/Notion/Sentry integrations.
+A project's own `tsforge.config.json` `mcpServers` entry with the same name overrides this one entirely; entries unique to either side apply together. See [MCP servers](/integrations/mcp/) for the field reference (including `"type": "http"` servers with auth `headers`, like [Twenty](/integrations/twenty/)) and the curated Linear/Notion/Sentry/Twenty integrations.
 
 ### Any other provider: `extraBody` / `extraHeaders`
 

@@ -1,0 +1,83 @@
+---
+title: Twenty CRM
+description: "Let the agent work your Twenty CRM: find people, companies and deals, log notes and follow-up tasks against them, and read the pipeline."
+---
+
+[Twenty](https://twenty.com) is an open-source CRM you can host yourself. With it connected, tsforge can look up a customer before replying to them, log what happened on a call or a support conversation, add a follow-up task, and tell you how the pipeline looks.
+
+Twenty is a **curated integration over MCP**. See [MCP servers](/integrations/mcp/) for the shared model: the connection is your consent, the agent gets a few purpose-built verbs, and nothing turns on until you configure it.
+
+## Turn it on
+
+1. In Twenty, open **Settings → APIs & Webhooks → API** and create an API key.
+2. Add a `twenty` server to `mcpServers` in `~/.tsforge/models.json` (or a project's `tsforge.config.json`). Twenty's MCP endpoint is plain HTTP, so it uses tsforge's built-in [HTTP transport](/integrations/mcp/#remote-hosted-servers). You don't need `mcp-remote`.
+
+```json title="~/.tsforge/models.json"
+{
+  "mcpServers": {
+    "twenty": {
+      "type": "http",
+      "url": "https://crm.example.com/mcp",
+      "headers": { "Authorization": "Bearer <your Twenty API key>" }
+    }
+  }
+}
+```
+
+The server **must be keyed exactly `twenty`**. Twenty's **Settings → MCP & APIs** page shows this same block with your instance's URL filled in. When it connects, an interactive session shows `twenty: on · CRM via MCP`. A wrong key shows up at startup as `HTTP 401 (unauthorized …)`.
+
+## The tools
+
+Twenty's MCP server offers about 300 generated tools behind a catalog the model would have to browse, learn and call in three steps. tsforge wraps the ones a CRM workflow needs in two verbs and sends Twenty exactly the argument shapes it validates. The model never sees the catalog.
+
+**`twenty_read`** (read-only). `type` is `person`, `company`, `opportunity`, `task` or `note`.
+
+| op | What it returns |
+| --- | --- |
+| `search` | records matching `query`: names and emails for people, name or domain for companies, titles for deals, tasks and notes |
+| `list` | the most recently updated records (`limit`, default 10, max 50) |
+| `record` | one record by `id`, with the notes and tasks attached to it |
+| `pipeline` | opportunities counted and summed by stage |
+
+Every row ends with the record's id in parentheses. That id is what `record`, `update`, `note` and `task` take.
+
+**`twenty_write`**:
+
+| op | What it does |
+| --- | --- |
+| `create` | a person (`firstName`, `lastName`, `email`, `phone`, `jobTitle`, `companyId`), a company (`name`, `domain`) or an opportunity (`name`, `stage`, `amount` + `currency`, `closeDate`, `companyId`, `pointOfContactId`) |
+| `update` | `type` + `id` + only the fields to change |
+| `note` | `title` + `body` (markdown); add `type` + `id` to attach it to that person, company or deal |
+| `task` | `title`, optional `body`, `dueAt`, `status` (`TODO`, `IN_PROGRESS`, `DONE`); `type` + `id` to attach it |
+
+Amounts are whole currency units (`5000` means 5,000). tsforge converts them to the micros Twenty stores. A new deal starts at stage `NEW` unless you pass one.
+
+There is **no delete**. If a record needs to go, the agent tells you.
+
+## Things worth knowing
+
+- **Search before create.** The agent is told to look a person or company up before adding one. Twenty enforces unique emails and company domains, and **records in Twenty's trash still count** until the trash is emptied. A duplicate comes back as a plain "that record already exists" instead of a database error.
+- **Notes are how the agent leaves a trail.** A support conversation in [Chatwoot](/integrations/chatwoot/) can end with a note on the customer's person record, so the next person to open them sees what happened.
+
+## When it's active
+
+Reads work in every mode, including [plan mode](/cli/plan-mode/). Writes follow capability as consent: allowed in an interactive session, held back while planning or running unattended. See [Permissions & policy](/guardrails/policy/).
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `TSFORGE_NO_TWENTY` | off | withhold the Twenty tools even when the server is connected (`=1`) |
+| `TSFORGE_TWENTY_RAW` | off | also advertise Twenty's raw `mcp__twenty__*` meta-tools (`=1`) |
+
+## Checking it against your instance
+
+tsforge's tests check every call against Twenty's real input schemas (from v2.41). A live suite runs the verbs against your own instance:
+
+```bash
+TSFORGE_LIVE=1 bun test packages/core/tests/integrations-live.test.ts
+# also create → update → note → task → read back → delete test records:
+TSFORGE_LIVE=1 TSFORGE_LIVE_WRITES=1 bun test packages/core/tests/integrations-live.test.ts
+```
+
+The write run uses records named `tsforge-test-…` and removes them for good afterwards, trash included.
+
+→ [MCP servers](/integrations/mcp/) · [Chatwoot](/integrations/chatwoot/) · [Environment variables](/reference/flags/)

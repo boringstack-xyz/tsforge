@@ -82,6 +82,24 @@ export const flags = {
   noNotion: (): boolean => isOn(ENV_FLAG.noNotion),
   /** Re-expose the raw `mcp__notion__*` tools alongside the curated verbs. */
   notionRaw: (): boolean => isOn(ENV_FLAG.notionRaw),
+  /** Kill-switch for the `twenty` capability (twenty_read / twenty_write); on iff a
+   *  `twenty` MCP server is configured + connected. */
+  noTwenty: (): boolean => isOn(ENV_FLAG.noTwenty),
+  /** Re-expose the raw `mcp__twenty__*` tools alongside the curated verbs. */
+  twentyRaw: (): boolean => isOn(ENV_FLAG.twentyRaw),
+  /** Kill-switch for the `chatwoot` capability (chatwoot_read / chatwoot_write). */
+  noChatwoot: (): boolean => isOn(ENV_FLAG.noChatwoot),
+  /** Chatwoot instance URL, e.g. https://support.example.com. "" when unset. */
+  chatwootUrl: (): string => process.env[ENV_FLAG.chatwootUrl]?.trim() ?? "",
+  /** Chatwoot user access token (Profile settings → Access token). "" when unset. */
+  chatwootToken: (): string =>
+    process.env[ENV_FLAG.chatwootToken]?.trim() ?? "",
+  /** Chatwoot account id (the number in /app/accounts/<id>/…); undefined when unset. */
+  chatwootAccountId: (): number | undefined => {
+    const n = Number(process.env[ENV_FLAG.chatwootAccountId]);
+
+    return Number.isInteger(n) && n > 0 ? n : undefined;
+  },
   /** Kill-switch for the `sentry` capability (sentry_read / sentry_write); on iff a
    *  `sentry` MCP server is configured + connected. */
   noSentry: (): boolean => isOn(ENV_FLAG.noSentry),
