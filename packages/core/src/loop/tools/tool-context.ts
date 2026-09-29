@@ -161,6 +161,12 @@ export interface IToolContext {
   /** Sentry capability = consent (a `sentry` MCP server configured + connected,
    *  TSFORGE_NO_SENTRY unset). The sentry_write handler hard-checks it. */
   sentry?: boolean;
+  /** Chatwoot capability = consent (chatwootUrl/Token/AccountId configured,
+   *  TSFORGE_NO_CHATWOOT unset). The chatwoot_write handler hard-checks it. */
+  chatwoot?: boolean;
+  /** Twenty capability = consent (a `twenty` MCP server configured + connected,
+   *  TSFORGE_NO_TWENTY unset). The twenty_write handler hard-checks it. */
+  twenty?: boolean;
   /** Whether a real interactive per-action approval path exists. Absent/false ⇒
    *  a policy `ask` resolves to `deny` (no approval UI today). NOTE: this is a POLICY
    *  signal — it does NOT mean "a human is watching"; the REPL sets `humanPresent`, not

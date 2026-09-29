@@ -6,6 +6,7 @@ export type {
 export { McpRegistry } from "./registry";
 export { connectMcpServers } from "./setup";
 export { StdioMcpTransport } from "./stdio-transport";
+export { HttpMcpTransport } from "./http-transport";
 export {
   parseMcpServers,
   interpolateEnv,

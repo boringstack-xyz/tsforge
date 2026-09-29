@@ -61,6 +61,8 @@ export interface IMcpServerConfig {
   readonly env?: Readonly<Record<string, string>>;
   /** http: server URL. */
   readonly url?: string;
+  /** http: headers sent on every request (e.g. `Authorization: Bearer …`). */
+  readonly headers?: Readonly<Record<string, string>>;
   /** Per-call timeout in milliseconds (default 30000). */
   readonly timeoutMs?: number;
 }

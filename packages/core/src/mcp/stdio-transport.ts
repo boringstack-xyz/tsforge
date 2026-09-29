@@ -1,59 +1,21 @@
 import { isRecord } from "../lib/guards";
 import { LineDecoder, encodeMessage, errorText } from "./jsonrpc";
+import {
+  extractTools,
+  toolCallText,
+  DEFAULT_TIMEOUT_MS,
+  PROTOCOL_VERSION,
+} from "./tool-result";
 import type {
   IMcpServerConfig,
   IMcpToolInfo,
   IMcpTransport,
 } from "./mcp.types";
 
-const PROTOCOL_VERSION = "2024-11-05";
-const DEFAULT_TIMEOUT_MS = 30000;
-
 interface IPending {
   readonly resolve: (value: unknown) => void;
   readonly reject: (err: Error) => void;
   readonly timer: ReturnType<typeof setTimeout>;
-}
-
-/** Render an MCP `tools/list` result into typed tool info, dropping bad entries. */
-function extractTools(result: unknown): IMcpToolInfo[] {
-  if (!isRecord(result) || !Array.isArray(result.tools)) {
-    return [];
-  }
-
-  const tools: IMcpToolInfo[] = [];
-
-  for (const entry of result.tools) {
-    if (!isRecord(entry) || typeof entry.name !== "string") {
-      continue;
-    }
-
-    tools.push({
-      name: entry.name,
-      description:
-        typeof entry.description === "string" ? entry.description : undefined,
-      inputSchema: isRecord(entry.inputSchema) ? entry.inputSchema : {},
-    });
-  }
-
-  return tools;
-}
-
-/** Render an MCP `tools/call` result's content array into plain text. */
-function extractText(result: unknown): string {
-  if (!isRecord(result) || !Array.isArray(result.content)) {
-    return JSON.stringify(result);
-  }
-
-  const parts: string[] = [];
-
-  for (const item of result.content) {
-    if (isRecord(item) && typeof item.text === "string") {
-      parts.push(item.text);
-    }
-  }
-
-  return parts.length > 0 ? parts.join("\n") : JSON.stringify(result);
 }
 
 /**
@@ -119,15 +81,9 @@ export class StdioMcpTransport implements IMcpTransport {
   }
 
   async callTool(name: string, args: Record<string, unknown>): Promise<string> {
-    const result = await this.request("tools/call", { name, arguments: args });
-
-    // MCP application errors use isError:true on a successful JSON-RPC result.
-    // Treating them as ok text made retain() report success on permission denials.
-    if (isRecord(result) && result.isError === true) {
-      throw new Error(extractText(result));
-    }
-
-    return extractText(result);
+    return toolCallText(
+      await this.request("tools/call", { name, arguments: args })
+    );
   }
 
   close(): Promise<void> {

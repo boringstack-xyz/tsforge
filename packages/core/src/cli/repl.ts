@@ -1542,6 +1542,8 @@ export async function repl(args: ICliArgs): Promise<number> {
   let linearOn = false;
   let notionOn = false;
   let sentryOn = false;
+  let chatwootOn = false;
+  let twentyOn = false;
 
   const wireImages = (): void => {
     session.setImageCapabilities(imageCaps);
@@ -1550,6 +1552,8 @@ export async function repl(args: ICliArgs): Promise<number> {
     linearOn = session.setLinearCapability();
     notionOn = session.setNotionCapability();
     sentryOn = session.setSentryCapability();
+    chatwootOn = session.setChatwootCapability();
+    twentyOn = session.setTwentyCapability();
     // After setImageCapabilities: browser_screenshot is offered only with vision.
     session.setBrowserCapability();
   };
@@ -1559,6 +1563,8 @@ export async function repl(args: ICliArgs): Promise<number> {
   announceLinear(linearOn);
   announceIntegration(notionOn, "notion", "pages + knowledge via MCP");
   announceIntegration(sentryOn, "sentry", "errors + fixes via MCP");
+  announceIntegration(chatwootOn, "chatwoot", "support inbox via REST");
+  announceIntegration(twentyOn, "twenty", "CRM via MCP");
   announceBrowser(session.browserStatus());
 
   if (imageCaps.vision || imageCaps.imageGen) {

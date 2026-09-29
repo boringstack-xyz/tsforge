@@ -14,6 +14,9 @@ You don't have to pass these variables every time you start tsforge. Put them in
     "webTools": true,
     "searxngUrl": "http://searx.lan",
     "stackExchangeKey": "…",
+    "chatwootUrl": "https://support.example.com",
+    "chatwootAccountId": 1,
+    "chatwootToken": "…",
     "maxTurns": 0
   },
   "env": { "TSFORGE_TDD": "0" }
@@ -29,6 +32,9 @@ You don't have to pass these variables every time you start tsforge. Put them in
 | `searxngUrl` | `TSFORGE_SEARXNG_URL` |
 | `searchBackend` | `TSFORGE_WEB_SEARCH_BACKEND` |
 | `stackExchangeKey` | `TSFORGE_STACKEXCHANGE_KEY` |
+| `chatwootUrl` | `TSFORGE_CHATWOOT_URL` ([Chatwoot](/integrations/chatwoot/)) |
+| `chatwootToken` | `TSFORGE_CHATWOOT_TOKEN` |
+| `chatwootAccountId` | `TSFORGE_CHATWOOT_ACCOUNT_ID` |
 | `maxTurns` | `TSFORGE_MAX_TURNS` |
 | `compactAt` | `TSFORGE_COMPACT_AT` |
 
@@ -81,9 +87,9 @@ On existing-code runs tsforge offers `git_context`, a read-only tool giving the 
 
 Offered only when there is existing code to inspect (greenfield scratch builds have no history), and it is independent of `TSFORGE_NO_LSP_TOOLS` since it is not an LSP tool. Being read-only, it is available in [plan mode](/cli/plan-mode/) too. For eval/headless runs it can be withheld with `TSFORGE_NO_GIT_TOOL=1`.
 
-## Integrations: GitHub, Linear, Notion, Sentry
+## Integrations: GitHub, Linear, Notion, Sentry, Twenty, Chatwoot
 
-Optional, opt-in integrations that let the agent read and act on the tools your workflow runs through. Each is **off** until it's available — [GitHub](/integrations/git-github/) when the `gh` CLI is installed and authenticated; [Linear](/integrations/linear/), [Notion](/integrations/notion/), and [Sentry](/integrations/sentry/) when their MCP server is configured — and each **writes only in interactive modes** (never while planning or running unattended). The kill-switches force one off; the `*_RAW` flags additionally expose that server's raw `mcp__<server>__*` tools alongside the curated verbs (off by default, so the model sees a small, focused tool set).
+Optional, opt-in integrations that let the agent read and act on the tools your workflow runs through. Each is **off** until it's available — [GitHub](/integrations/git-github/) when the `gh` CLI is installed and authenticated; [Linear](/integrations/linear/), [Notion](/integrations/notion/), [Sentry](/integrations/sentry/) and [Twenty](/integrations/twenty/) when their MCP server is configured; [Chatwoot](/integrations/chatwoot/) when its URL, token and account are set — and each **writes only in interactive modes** (never while planning or running unattended). The kill-switches force one off; the `*_RAW` flags additionally expose that server's raw `mcp__<server>__*` tools alongside the curated verbs (off by default, so the model sees a small, focused tool set).
 
 | Variable | Default | Effect |
 | --- | --- | --- |
@@ -94,6 +100,12 @@ Optional, opt-in integrations that let the agent read and act on the tools your 
 | `TSFORGE_NOTION_RAW` | off | also advertise the raw `mcp__notion__*` tools (`=1`) |
 | `TSFORGE_NO_SENTRY` | off | withhold the Sentry tools (`=1`) |
 | `TSFORGE_SENTRY_RAW` | off | also advertise the raw `mcp__sentry__*` tools (`=1`) |
+| `TSFORGE_NO_TWENTY` | off | withhold the Twenty CRM tools (`=1`) |
+| `TSFORGE_TWENTY_RAW` | off | also advertise the raw `mcp__twenty__*` tools (`=1`) |
+| `TSFORGE_NO_CHATWOOT` | off | withhold the Chatwoot tools (`=1`) |
+| `TSFORGE_CHATWOOT_URL` | unset | Chatwoot instance URL (prefer `chatwootUrl` in the settings file) |
+| `TSFORGE_CHATWOOT_TOKEN` | unset | Chatwoot access token (prefer `chatwootToken`) |
+| `TSFORGE_CHATWOOT_ACCOUNT_ID` | unset | Chatwoot account id (prefer `chatwootAccountId`) |
 
 ## Web access
 

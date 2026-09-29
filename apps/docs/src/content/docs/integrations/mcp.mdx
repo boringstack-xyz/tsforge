@@ -3,13 +3,13 @@ title: MCP servers
 description: Give the agent extra tools from external Model Context Protocol servers. Live library docs, search, and more.
 ---
 
-tsforge can connect to external **MCP (Model Context Protocol) servers** and offer their tools to the agent during an interactive session. The classic use is **[Context7](https://github.com/upstash/context7)** for up-to-date library documentation, but any stdio MCP server works.
+tsforge can connect to external **MCP (Model Context Protocol) servers** and offer their tools to the agent during an interactive session. The classic use is **[Context7](https://github.com/upstash/context7)** for up-to-date library documentation, but any MCP server works, spawned locally over stdio or reached over HTTP.
 
 MCP is **opt-in**: with no `mcpServers` block in your config, nothing connects and nothing changes.
 
 ## Configure
 
-Add an `mcpServers` block to `tsforge.config.json` at your repo root. Each entry is a stdio server tsforge spawns. `${VAR}` references are read from the environment at startup.
+Add an `mcpServers` block to `tsforge.config.json` at your repo root. An entry is either a stdio server tsforge spawns, or (`"type": "http"`) a server it reaches at a URL. `${VAR}` references are read from the environment at startup.
 
 ```json
 {
@@ -28,7 +28,9 @@ Add an `mcpServers` block to `tsforge.config.json` at your repo root. Each entry
 | `command` | yes (stdio) | Executable to spawn |
 | `args` | no | Arguments for `command` |
 | `env` | no | Extra env vars (merged over the parent env); `${VAR}` interpolated |
-| `type` | no | `stdio` (default) or `http` (http not yet wired) |
+| `type` | no | `stdio` (default) or `http` |
+| `url` | yes (http) | The server's MCP endpoint, e.g. `https://crm.example.com/mcp` |
+| `headers` | no (http) | Headers sent on every request, e.g. `{ "Authorization": "Bearer …" }`; `${VAR}` interpolated |
 | `timeoutMs` | no | Per-call timeout (default 30000) |
 
 ### Global servers (`~/.tsforge/models.json`)
@@ -50,17 +52,35 @@ An `mcpServers` block also works in the global model registry, `~/.tsforge/model
 
 On startup tsforge connects each server, lists its tools, and advertises them to the model under a namespaced name: `mcp__<server>__<tool>` (for example `mcp__context7__get-library-docs`). When the model calls one, tsforge routes it to that server and feeds the text result back into the conversation.
 
-## Built-in integrations (Linear, Notion, Sentry)
+## Built-in integrations (Linear, Notion, Sentry, Twenty)
 
-Some MCP servers get a **curated** treatment instead of raw passthrough. When you configure a server keyed **`linear`**, **`notion`**, or **`sentry`**, tsforge offers a small set of purpose-built verbs (e.g. `linear_read`, `notion_read`, `sentry_read`) instead of that server's dozens of raw tools — so the model's tool list stays focused — and hides the raw `mcp__<server>__*` tools by default (re-expose them with the matching `TSFORGE_<NAME>_RAW=1`). These follow a **capability = consent** model: the server being connected is your consent, reads work in every mode, and writes are held back while planning or running unattended.
+Some MCP servers get a **curated** treatment instead of raw passthrough. When you configure a server keyed **`linear`**, **`notion`**, **`sentry`** or **`twenty`**, tsforge offers a small set of purpose-built verbs (e.g. `linear_read`, `notion_read`, `sentry_read`) instead of that server's dozens of raw tools — so the model's tool list stays focused — and hides the raw `mcp__<server>__*` tools by default (re-expose them with the matching `TSFORGE_<NAME>_RAW=1`). These follow a **capability = consent** model: the server being connected is your consent, reads work in every mode, and writes are held back while planning or running unattended.
 
 [GitHub](/integrations/git-github/) is first-class too, but via the `git`/`gh` binaries rather than MCP.
 
-Full guides: [Git & GitHub](/integrations/git-github/) · [Linear](/integrations/linear/) · [Notion](/integrations/notion/) · [Sentry](/integrations/sentry/).
+[Chatwoot](/integrations/chatwoot/) works the same way but over its REST API, since it has no MCP server.
+
+Full guides: [Git & GitHub](/integrations/git-github/) · [Linear](/integrations/linear/) · [Notion](/integrations/notion/) · [Sentry](/integrations/sentry/) · [Twenty CRM](/integrations/twenty/) · [Chatwoot](/integrations/chatwoot/).
 
 ### Remote (hosted) servers
 
-tsforge's MCP transport is **stdio**. To reach a hosted server that speaks HTTP/SSE (like Linear's, Notion's, or Sentry's), bridge it with [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) as the stdio command:
+A server that speaks **Streamable HTTP** and takes a token in a header connects directly with `"type": "http"`. Self-hosted apps such as [Twenty](/integrations/twenty/) work this way:
+
+```json
+{
+  "mcpServers": {
+    "twenty": {
+      "type": "http",
+      "url": "https://crm.example.com/mcp",
+      "headers": { "Authorization": "Bearer <your Twenty API key>" }
+    }
+  }
+}
+```
+
+tsforge sends your headers on every request, keeps the session the server issues (and starts a fresh one if the server forgets it), accepts JSON or streamed replies, and reports a rejected key as `HTTP 401 (unauthorized …)` at startup.
+
+Hosted servers that sign you in through a browser (OAuth), like Linear's, Notion's or Sentry's, still go through [`mcp-remote`](https://www.npmjs.com/package/mcp-remote), which handles the sign-in:
 
 ```json
 {
@@ -80,7 +100,7 @@ MCP fits tsforge's deterministic, local-first design as an **opt-in context sour
 
 ## Limits today
 
-- **stdio transport only**: `http` entries are reported and skipped (HTTP/SSE is planned).
+- The `http` transport takes a token in a header. It does not run a browser sign-in (OAuth); use `mcp-remote` for servers that need one.
 - MCP tools are offered in the **interactive CLI**; the headless eval path does not load them.
 - Connected servers are child processes; they exit with the tsforge process.
 

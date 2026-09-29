@@ -35,6 +35,10 @@ const KIND_BY_TOOL: Readonly<Record<string, ActionKind>> = {
   // Notion + Sentry share the integration kinds: reads plan-safe, writes gated.
   [TOOL_NAME.notionRead]: "integration_read",
   [TOOL_NAME.notionWrite]: "integration_write",
+  [TOOL_NAME.twentyRead]: "integration_read",
+  [TOOL_NAME.twentyWrite]: "integration_write",
+  [TOOL_NAME.chatwootRead]: "integration_read",
+  [TOOL_NAME.chatwootWrite]: "integration_write",
   [TOOL_NAME.sentryRead]: "integration_read",
   [TOOL_NAME.sentryWrite]: "integration_write",
   [TOOL_NAME.edit]: "edit_file",

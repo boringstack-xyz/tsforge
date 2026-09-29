@@ -71,6 +71,8 @@ import { resolveGithubCapability } from "./tools/github-ops";
 import { resolveLinearCapability } from "./tools/linear-ops";
 import { resolveNotionCapability } from "./tools/notion-ops";
 import { resolveSentryCapability } from "./tools/sentry-ops";
+import { resolveChatwootCapability } from "./tools/chatwoot-ops";
+import { resolveTwentyCapability } from "./tools/twenty-ops";
 import { connectMcpServers, mergeMcpServers } from "../mcp";
 import { openBrowserSession } from "../chrome-bridge";
 import {
@@ -1420,6 +1422,8 @@ export async function runTask(
   const linear = resolveLinearCapability(mcpRegistry);
   const notion = resolveNotionCapability(mcpRegistry);
   const sentry = resolveSentryCapability(mcpRegistry);
+  const chatwoot = resolveChatwootCapability();
+  const twenty = resolveTwentyCapability(mcpRegistry);
   // Chrome research bridge (TSFORGE_BROWSER) — same process-wide bridge the
   // interactive session uses; advertised only when this process owns the port.
   const browser = flags.browser()
@@ -1432,6 +1436,8 @@ export async function runTask(
     linear,
     notion,
     sentry,
+    chatwoot,
+    twenty,
     browser: browserOn,
   };
   const tools = toolsFor(hasExistingCode, caps);
@@ -1473,6 +1479,8 @@ export async function runTask(
       linear,
       notion,
       sentry,
+      chatwoot,
+      twenty,
       ...(mcpRegistry === null ? {} : { mcpRegistry }),
       ...(browser === null ? {} : { browser }),
       ...policyCtxFields(policy, opts.policyMode),

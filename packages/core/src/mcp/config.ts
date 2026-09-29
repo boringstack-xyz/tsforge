@@ -1,8 +1,8 @@
 import { isRecord } from "../lib/guards";
 import type { IMcpServerConfig } from "./mcp.types";
 
-/** MCP server keys the curated Linear/Notion/Sentry integrations require. */
-const INTEGRATION_MCP_KEYS = ["linear", "notion", "sentry"] as const;
+/** MCP server keys the curated Linear/Notion/Sentry/Twenty integrations require. */
+const INTEGRATION_MCP_KEYS = ["linear", "notion", "sentry", "twenty"] as const;
 
 type EnvLookup = Readonly<Record<string, string | undefined>>;
 
@@ -78,6 +78,7 @@ function parseOne(value: unknown, env: EnvLookup): IMcpServerConfig | null {
     args: stringArray(value.args, env),
     env: envRecord(value.env, env),
     url,
+    headers: envRecord(value.headers, env),
     timeoutMs,
   };
 }
@@ -200,7 +201,7 @@ function integrationNamingWarnings(
 
   if (INTEGRATION_MCP_KEYS.every((s) => !keys.has(s))) {
     warnings.push(
-      `mcpServers: no integration keys (${INTEGRATION_MCP_KEYS.join(", ")}) — Linear/Notion/Sentry curated tools need servers keyed exactly those names.`
+      `mcpServers: no integration keys (${INTEGRATION_MCP_KEYS.join(", ")}) — Linear/Notion/Sentry/Twenty curated tools need servers keyed exactly those names.`
     );
   }
 
@@ -254,6 +255,12 @@ function scanOneMcpServerEntry(
     isRecord(value.env) ? value.env : undefined,
     env,
     prefix,
+    warnings
+  );
+  scanRecordEnv(
+    isRecord(value.headers) ? value.headers : undefined,
+    env,
+    `${prefix}.headers`,
     warnings
   );
   scanArgsEnv(value.args, env, prefix, warnings);

@@ -1,0 +1,4055 @@
+{
+  "twentyVersion": "v2.41.0",
+  "tools": {
+    "find_many_notes": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "description": "Maximum number of records to return (default: 10, max: 100). Start small and increase only if needed.",
+          "default": 10,
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "offset": {
+          "description": "Number of records to skip (default: 0)",
+          "default": 0,
+          "type": "integer"
+        },
+        "orderBy": {
+          "description": "Sort by field(s). Scalar fields: [{fieldName: \"DescNullsLast\"}]. Composite fields (name, address, currency, …): [{fieldName: {subFieldName: \"AscNullsFirst\"}}] — e.g. [{\"name\": {\"firstName\": \"AscNullsFirst\"}}]. Never use dot-notation keys like \"name.firstName\". Use DescNullsLast for top/largest, AscNullsFirst for bottom/smallest.",
+          "type": "array",
+          "items": {
+            "description": "Object with exactly ONE property. For scalar fields use a direction string: {\"employees\": \"DescNullsLast\"}. For composite fields (e.g. name, address, currency) use a nested object with the sub-field: {\"name\": {\"firstName\": \"AscNullsFirst\"}}. Never use dot-notation keys like \"name.firstName\".",
+            "type": "object",
+            "properties": {},
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/__schema0"
+                },
+                {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "select": {
+          "description": "Fields to include in the response. Required. Use '*' to return all fields, or list specific field names. Relation fields resolve to related records as {id, label} summaries: MANY_TO_ONE returns a single object (or select the '<name>Id' FK column for just the id), ONE_TO_MANY returns up to 60 related records. For more fields or more records, query the related object directly. ",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "title": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "bodyV2": {
+          "$ref": "#/$defs/__schema3"
+        },
+        "or": {
+          "description": "OR condition - matches if ANY of the filters match",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema4"
+          }
+        },
+        "and": {
+          "description": "AND condition - matches if ALL filters match",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema4"
+          }
+        },
+        "not": {
+          "description": "NOT condition - matches if the filter does NOT match",
+          "$ref": "#/$defs/__schema4"
+        }
+      },
+      "required": ["select"],
+      "$defs": {
+        "__schema0": {
+          "type": "string",
+          "enum": [
+            "AscNullsFirst",
+            "AscNullsLast",
+            "DescNullsFirst",
+            "DescNullsLast"
+          ]
+        },
+        "__schema1": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "type": "string"
+            },
+            "neq": {
+              "description": "Not equals",
+              "type": "string"
+            },
+            "in": {
+              "description": "In array",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "like": {
+              "description": "LIKE (% wildcard)",
+              "type": "string"
+            },
+            "ilike": {
+              "description": "ILIKE (% wildcard, case-insensitive)",
+              "type": "string"
+            },
+            "startsWith": {
+              "description": "Starts with",
+              "type": "string"
+            },
+            "endsWith": {
+              "description": "Ends with",
+              "type": "string"
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema2": {
+          "description": "Is null or not null",
+          "type": "string",
+          "enum": ["NULL", "NOT_NULL"]
+        },
+        "__schema3": {
+          "type": "object",
+          "properties": {
+            "markdown": {
+              "type": "object",
+              "properties": {
+                "eq": {
+                  "description": "Equals",
+                  "type": "string"
+                },
+                "neq": {
+                  "description": "Not equals",
+                  "type": "string"
+                },
+                "like": {
+                  "description": "LIKE (% wildcard)",
+                  "type": "string"
+                },
+                "ilike": {
+                  "description": "ILIKE (% wildcard, case-insensitive)",
+                  "type": "string"
+                },
+                "startsWith": {
+                  "description": "Starts with",
+                  "type": "string"
+                },
+                "endsWith": {
+                  "description": "Ends with",
+                  "type": "string"
+                },
+                "is": {
+                  "$ref": "#/$defs/__schema2"
+                }
+              }
+            }
+          }
+        },
+        "__schema4": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "$ref": "#/$defs/__schema1"
+            },
+            "bodyV2": {
+              "$ref": "#/$defs/__schema3"
+            },
+            "or": {
+              "description": "OR condition - matches if ANY of the filters match",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema4"
+              }
+            },
+            "and": {
+              "description": "AND condition - matches if ALL filters match",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema4"
+              }
+            },
+            "not": {
+              "description": "NOT condition - matches if the filter does NOT match",
+              "$ref": "#/$defs/__schema4"
+            }
+          }
+        }
+      }
+    },
+    "find_one_note": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The unique UUID of the record to retrieve",
+          "type": "string",
+          "format": "uuid"
+        },
+        "select": {
+          "description": "Fields to include in the response. Required. Use '*' to return all fields. Relation fields resolve to related records as {id, label} summaries: MANY_TO_ONE returns a single object (or select the <name>Id FK column for just the id), ONE_TO_MANY returns up to 60 related records.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["id", "select"]
+    },
+    "create_one_note": {
+      "type": "object",
+      "properties": {
+        "position": {
+          "description": "Use \"first\" to insert at the top, \"last\" for the bottom, or a number for explicit ordering. Leave empty to place at the top (recommended).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "first"
+            },
+            {
+              "type": "string",
+              "const": "last"
+            }
+          ]
+        },
+        "title": {
+          "description": "Note title",
+          "type": "string"
+        },
+        "bodyV2": {
+          "description": "Note body",
+          "type": "object",
+          "properties": {
+            "markdown": {
+              "type": "string"
+            },
+            "blocknote": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": ["position"]
+    },
+    "find_many_tasks": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "description": "Maximum number of records to return (default: 10, max: 100). Start small and increase only if needed.",
+          "default": 10,
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "offset": {
+          "description": "Number of records to skip (default: 0)",
+          "default": 0,
+          "type": "integer"
+        },
+        "orderBy": {
+          "description": "Sort by field(s). Scalar fields: [{fieldName: \"DescNullsLast\"}]. Composite fields (name, address, currency, …): [{fieldName: {subFieldName: \"AscNullsFirst\"}}] — e.g. [{\"name\": {\"firstName\": \"AscNullsFirst\"}}]. Never use dot-notation keys like \"name.firstName\". Use DescNullsLast for top/largest, AscNullsFirst for bottom/smallest.",
+          "type": "array",
+          "items": {
+            "description": "Object with exactly ONE property. For scalar fields use a direction string: {\"employees\": \"DescNullsLast\"}. For composite fields (e.g. name, address, currency) use a nested object with the sub-field: {\"name\": {\"firstName\": \"AscNullsFirst\"}}. Never use dot-notation keys like \"name.firstName\".",
+            "type": "object",
+            "properties": {},
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/__schema0"
+                },
+                {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "select": {
+          "description": "Fields to include in the response. Required. Use '*' to return all fields, or list specific field names. Relation fields resolve to related records as {id, label} summaries: MANY_TO_ONE returns a single object (or select the '<name>Id' FK column for just the id), ONE_TO_MANY returns up to 60 related records. For more fields or more records, query the related object directly. ",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "title": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "bodyV2": {
+          "$ref": "#/$defs/__schema3"
+        },
+        "dueAt": {
+          "$ref": "#/$defs/__schema4"
+        },
+        "status": {
+          "$ref": "#/$defs/__schema5"
+        },
+        "assigneeId": {
+          "$ref": "#/$defs/__schema7"
+        },
+        "or": {
+          "description": "OR condition - matches if ANY of the filters match",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema8"
+          }
+        },
+        "and": {
+          "description": "AND condition - matches if ALL filters match",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema8"
+          }
+        },
+        "not": {
+          "description": "NOT condition - matches if the filter does NOT match",
+          "$ref": "#/$defs/__schema8"
+        }
+      },
+      "required": ["select"],
+      "$defs": {
+        "__schema0": {
+          "type": "string",
+          "enum": [
+            "AscNullsFirst",
+            "AscNullsLast",
+            "DescNullsFirst",
+            "DescNullsLast"
+          ]
+        },
+        "__schema1": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "type": "string"
+            },
+            "neq": {
+              "description": "Not equals",
+              "type": "string"
+            },
+            "in": {
+              "description": "In array",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "like": {
+              "description": "LIKE (% wildcard)",
+              "type": "string"
+            },
+            "ilike": {
+              "description": "ILIKE (% wildcard, case-insensitive)",
+              "type": "string"
+            },
+            "startsWith": {
+              "description": "Starts with",
+              "type": "string"
+            },
+            "endsWith": {
+              "description": "Ends with",
+              "type": "string"
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema2": {
+          "description": "Is null or not null",
+          "type": "string",
+          "enum": ["NULL", "NOT_NULL"]
+        },
+        "__schema3": {
+          "type": "object",
+          "properties": {
+            "markdown": {
+              "type": "object",
+              "properties": {
+                "eq": {
+                  "description": "Equals",
+                  "type": "string"
+                },
+                "neq": {
+                  "description": "Not equals",
+                  "type": "string"
+                },
+                "like": {
+                  "description": "LIKE (% wildcard)",
+                  "type": "string"
+                },
+                "ilike": {
+                  "description": "ILIKE (% wildcard, case-insensitive)",
+                  "type": "string"
+                },
+                "startsWith": {
+                  "description": "Starts with",
+                  "type": "string"
+                },
+                "endsWith": {
+                  "description": "Ends with",
+                  "type": "string"
+                },
+                "is": {
+                  "$ref": "#/$defs/__schema2"
+                }
+              }
+            }
+          }
+        },
+        "__schema4": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals (ISO datetime)",
+              "type": "string",
+              "format": "date-time"
+            },
+            "neq": {
+              "description": "Not equals (ISO datetime)",
+              "type": "string",
+              "format": "date-time"
+            },
+            "gt": {
+              "description": "> ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "gte": {
+              "description": ">= ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "lt": {
+              "description": "< ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "lte": {
+              "description": "<= ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "in": {
+              "description": "In array (ISO datetimes)",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema5": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "$ref": "#/$defs/__schema6"
+            },
+            "neq": {
+              "description": "Not equals",
+              "$ref": "#/$defs/__schema6"
+            },
+            "in": {
+              "description": "In array of values",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema6"
+              }
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema6": {
+          "type": "string",
+          "enum": ["TODO", "IN_PROGRESS", "DONE"]
+        },
+        "__schema7": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "type": "string",
+              "format": "uuid"
+            },
+            "neq": {
+              "description": "Not equals",
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": {
+              "description": "In array of values",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema8": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "$ref": "#/$defs/__schema1"
+            },
+            "bodyV2": {
+              "$ref": "#/$defs/__schema3"
+            },
+            "dueAt": {
+              "$ref": "#/$defs/__schema4"
+            },
+            "status": {
+              "$ref": "#/$defs/__schema5"
+            },
+            "assigneeId": {
+              "$ref": "#/$defs/__schema7"
+            },
+            "or": {
+              "description": "OR condition - matches if ANY of the filters match",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema8"
+              }
+            },
+            "and": {
+              "description": "AND condition - matches if ALL filters match",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema8"
+              }
+            },
+            "not": {
+              "description": "NOT condition - matches if the filter does NOT match",
+              "$ref": "#/$defs/__schema8"
+            }
+          }
+        }
+      }
+    },
+    "find_one_task": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The unique UUID of the record to retrieve",
+          "type": "string",
+          "format": "uuid"
+        },
+        "select": {
+          "description": "Fields to include in the response. Required. Use '*' to return all fields. Relation fields resolve to related records as {id, label} summaries: MANY_TO_ONE returns a single object (or select the <name>Id FK column for just the id), ONE_TO_MANY returns up to 60 related records.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["id", "select"]
+    },
+    "create_one_task": {
+      "type": "object",
+      "properties": {
+        "position": {
+          "description": "Use \"first\" to insert at the top, \"last\" for the bottom, or a number for explicit ordering. Leave empty to place at the top (recommended).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "first"
+            },
+            {
+              "type": "string",
+              "const": "last"
+            }
+          ]
+        },
+        "title": {
+          "description": "Task title",
+          "type": "string"
+        },
+        "bodyV2": {
+          "description": "Task body",
+          "type": "object",
+          "properties": {
+            "markdown": {
+              "type": "string"
+            },
+            "blocknote": {
+              "type": "string"
+            }
+          }
+        },
+        "dueAt": {
+          "description": "Task due date",
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "description": "Task status",
+          "type": "string",
+          "enum": ["TODO", "IN_PROGRESS", "DONE"]
+        },
+        "assigneeId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": ["position"]
+    },
+    "find_many_task_targets": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "description": "Maximum number of records to return (default: 10, max: 100). Start small and increase only if needed.",
+          "default": 10,
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "offset": {
+          "description": "Number of records to skip (default: 0)",
+          "default": 0,
+          "type": "integer"
+        },
+        "orderBy": {
+          "description": "Sort by field(s). Scalar fields: [{fieldName: \"DescNullsLast\"}]. Composite fields (name, address, currency, …): [{fieldName: {subFieldName: \"AscNullsFirst\"}}] — e.g. [{\"name\": {\"firstName\": \"AscNullsFirst\"}}]. Never use dot-notation keys like \"name.firstName\". Use DescNullsLast for top/largest, AscNullsFirst for bottom/smallest.",
+          "type": "array",
+          "items": {
+            "description": "Object with exactly ONE property. For scalar fields use a direction string: {\"employees\": \"DescNullsLast\"}. For composite fields (e.g. name, address, currency) use a nested object with the sub-field: {\"name\": {\"firstName\": \"AscNullsFirst\"}}. Never use dot-notation keys like \"name.firstName\".",
+            "type": "object",
+            "properties": {},
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/__schema0"
+                },
+                {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "select": {
+          "description": "Fields to include in the response. Required. Use '*' to return all fields, or list specific field names. Relation fields resolve to related records as {id, label} summaries: MANY_TO_ONE returns a single object (or select the '<name>Id' FK column for just the id), ONE_TO_MANY returns up to 60 related records. For more fields or more records, query the related object directly. ",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "targetCompanyId": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "targetOpportunityId": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "targetPersonId": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "taskId": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "or": {
+          "description": "OR condition - matches if ANY of the filters match",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema2"
+          }
+        },
+        "and": {
+          "description": "AND condition - matches if ALL filters match",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema2"
+          }
+        },
+        "not": {
+          "description": "NOT condition - matches if the filter does NOT match",
+          "$ref": "#/$defs/__schema2"
+        }
+      },
+      "required": ["select"],
+      "$defs": {
+        "__schema0": {
+          "type": "string",
+          "enum": [
+            "AscNullsFirst",
+            "AscNullsLast",
+            "DescNullsFirst",
+            "DescNullsLast"
+          ]
+        },
+        "__schema1": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "type": "string",
+              "format": "uuid"
+            },
+            "neq": {
+              "description": "Not equals",
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": {
+              "description": "In array of values",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "is": {
+              "description": "Is null or not null",
+              "type": "string",
+              "enum": ["NULL", "NOT_NULL"]
+            }
+          }
+        },
+        "__schema2": {
+          "type": "object",
+          "properties": {
+            "targetCompanyId": {
+              "$ref": "#/$defs/__schema1"
+            },
+            "targetOpportunityId": {
+              "$ref": "#/$defs/__schema1"
+            },
+            "targetPersonId": {
+              "$ref": "#/$defs/__schema1"
+            },
+            "taskId": {
+              "$ref": "#/$defs/__schema1"
+            },
+            "or": {
+              "description": "OR condition - matches if ANY of the filters match",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema2"
+              }
+            },
+            "and": {
+              "description": "AND condition - matches if ALL filters match",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema2"
+              }
+            },
+            "not": {
+              "description": "NOT condition - matches if the filter does NOT match",
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        }
+      }
+    },
+    "create_one_task_target": {
+      "type": "object",
+      "properties": {
+        "position": {
+          "description": "Use \"first\" to insert at the top, \"last\" for the bottom, or a number for explicit ordering. Leave empty to place at the top (recommended).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "first"
+            },
+            {
+              "type": "string",
+              "const": "last"
+            }
+          ]
+        },
+        "targetCompanyId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "targetOpportunityId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "targetPersonId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "taskId": {
+          "$ref": "#/$defs/__schema0"
+        }
+      },
+      "required": ["position"],
+      "$defs": {
+        "__schema0": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "find_many_opportunities": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "description": "Maximum number of records to return (default: 10, max: 100). Start small and increase only if needed.",
+          "default": 10,
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "offset": {
+          "description": "Number of records to skip (default: 0)",
+          "default": 0,
+          "type": "integer"
+        },
+        "orderBy": {
+          "description": "Sort by field(s). Scalar fields: [{fieldName: \"DescNullsLast\"}]. Composite fields (name, address, currency, …): [{fieldName: {subFieldName: \"AscNullsFirst\"}}] — e.g. [{\"name\": {\"firstName\": \"AscNullsFirst\"}}]. Never use dot-notation keys like \"name.firstName\". Use DescNullsLast for top/largest, AscNullsFirst for bottom/smallest.",
+          "type": "array",
+          "items": {
+            "description": "Object with exactly ONE property. For scalar fields use a direction string: {\"employees\": \"DescNullsLast\"}. For composite fields (e.g. name, address, currency) use a nested object with the sub-field: {\"name\": {\"firstName\": \"AscNullsFirst\"}}. Never use dot-notation keys like \"name.firstName\".",
+            "type": "object",
+            "properties": {},
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/__schema0"
+                },
+                {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "select": {
+          "description": "Fields to include in the response. Required. Use '*' to return all fields, or list specific field names. Relation fields resolve to related records as {id, label} summaries: MANY_TO_ONE returns a single object (or select the '<name>Id' FK column for just the id), ONE_TO_MANY returns up to 60 related records. For more fields or more records, query the related object directly. ",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "amount": {
+          "$ref": "#/$defs/__schema3"
+        },
+        "closeDate": {
+          "$ref": "#/$defs/__schema4"
+        },
+        "companyId": {
+          "$ref": "#/$defs/__schema5"
+        },
+        "pointOfContactId": {
+          "$ref": "#/$defs/__schema5"
+        },
+        "ownerId": {
+          "$ref": "#/$defs/__schema5"
+        },
+        "lastContactAt": {
+          "$ref": "#/$defs/__schema4"
+        },
+        "lastContactItemMessageId": {
+          "$ref": "#/$defs/__schema5"
+        },
+        "lastContactItemCalendarEventId": {
+          "$ref": "#/$defs/__schema5"
+        },
+        "stage": {
+          "$ref": "#/$defs/__schema6"
+        },
+        "product": {
+          "$ref": "#/$defs/__schema8"
+        },
+        "opportunityType": {
+          "$ref": "#/$defs/__schema10"
+        },
+        "or": {
+          "description": "OR condition - matches if ANY of the filters match",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema12"
+          }
+        },
+        "and": {
+          "description": "AND condition - matches if ALL filters match",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema12"
+          }
+        },
+        "not": {
+          "description": "NOT condition - matches if the filter does NOT match",
+          "$ref": "#/$defs/__schema12"
+        }
+      },
+      "required": ["select"],
+      "$defs": {
+        "__schema0": {
+          "type": "string",
+          "enum": [
+            "AscNullsFirst",
+            "AscNullsLast",
+            "DescNullsFirst",
+            "DescNullsLast"
+          ]
+        },
+        "__schema1": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "type": "string"
+            },
+            "neq": {
+              "description": "Not equals",
+              "type": "string"
+            },
+            "in": {
+              "description": "In array",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "like": {
+              "description": "LIKE (% wildcard)",
+              "type": "string"
+            },
+            "ilike": {
+              "description": "ILIKE (% wildcard, case-insensitive)",
+              "type": "string"
+            },
+            "startsWith": {
+              "description": "Starts with",
+              "type": "string"
+            },
+            "endsWith": {
+              "description": "Ends with",
+              "type": "string"
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema2": {
+          "description": "Is null or not null",
+          "type": "string",
+          "enum": ["NULL", "NOT_NULL"]
+        },
+        "__schema3": {
+          "type": "object",
+          "properties": {
+            "amountMicros": {
+              "description": "Currency amount in micros (1 unit = 1,000,000 micros). Multiply the user-provided amount by 1,000,000 to build this filter.",
+              "type": "object",
+              "properties": {
+                "eq": {
+                  "description": "Equals",
+                  "type": "number"
+                },
+                "neq": {
+                  "description": "Not equals",
+                  "type": "number"
+                },
+                "gt": {
+                  "description": ">",
+                  "type": "number"
+                },
+                "gte": {
+                  "description": ">=",
+                  "type": "number"
+                },
+                "lt": {
+                  "description": "<",
+                  "type": "number"
+                },
+                "lte": {
+                  "description": "<=",
+                  "type": "number"
+                },
+                "in": {
+                  "description": "In array",
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "is": {
+                  "$ref": "#/$defs/__schema2"
+                }
+              }
+            },
+            "currencyCode": {
+              "type": "object",
+              "properties": {
+                "eq": {
+                  "description": "Equals",
+                  "type": "string"
+                },
+                "neq": {
+                  "description": "Not equals",
+                  "type": "string"
+                },
+                "in": {
+                  "description": "In array",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "is": {
+                  "$ref": "#/$defs/__schema2"
+                }
+              }
+            }
+          }
+        },
+        "__schema4": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals (ISO datetime)",
+              "type": "string",
+              "format": "date-time"
+            },
+            "neq": {
+              "description": "Not equals (ISO datetime)",
+              "type": "string",
+              "format": "date-time"
+            },
+            "gt": {
+              "description": "> ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "gte": {
+              "description": ">= ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "lt": {
+              "description": "< ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "lte": {
+              "description": "<= ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "in": {
+              "description": "In array (ISO datetimes)",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema5": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "type": "string",
+              "format": "uuid"
+            },
+            "neq": {
+              "description": "Not equals",
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": {
+              "description": "In array of values",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema6": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "$ref": "#/$defs/__schema7"
+            },
+            "neq": {
+              "description": "Not equals",
+              "$ref": "#/$defs/__schema7"
+            },
+            "in": {
+              "description": "In array of values",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema7"
+              }
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema7": {
+          "type": "string",
+          "enum": [
+            "NEW",
+            "CONTACTED",
+            "IN_DISCUSSION",
+            "PROPOSAL",
+            "WON",
+            "NOT_PROCEEDING"
+          ]
+        },
+        "__schema8": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "$ref": "#/$defs/__schema9"
+            },
+            "neq": {
+              "description": "Not equals",
+              "$ref": "#/$defs/__schema9"
+            },
+            "in": {
+              "description": "In array of values",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema9"
+              }
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema9": {
+          "type": "string",
+          "enum": ["GUITAR_WIRING"]
+        },
+        "__schema10": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "$ref": "#/$defs/__schema11"
+            },
+            "neq": {
+              "description": "Not equals",
+              "$ref": "#/$defs/__schema11"
+            },
+            "in": {
+              "description": "In array of values",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema11"
+              }
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema11": {
+          "type": "string",
+          "enum": ["CUSTOMER_SALE", "RETAILER_MANUFACTURER", "CREATOR_EDUCATOR"]
+        },
+        "__schema12": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/__schema1"
+            },
+            "amount": {
+              "$ref": "#/$defs/__schema3"
+            },
+            "closeDate": {
+              "$ref": "#/$defs/__schema4"
+            },
+            "companyId": {
+              "$ref": "#/$defs/__schema5"
+            },
+            "pointOfContactId": {
+              "$ref": "#/$defs/__schema5"
+            },
+            "ownerId": {
+              "$ref": "#/$defs/__schema5"
+            },
+            "lastContactAt": {
+              "$ref": "#/$defs/__schema4"
+            },
+            "lastContactItemMessageId": {
+              "$ref": "#/$defs/__schema5"
+            },
+            "lastContactItemCalendarEventId": {
+              "$ref": "#/$defs/__schema5"
+            },
+            "stage": {
+              "$ref": "#/$defs/__schema6"
+            },
+            "product": {
+              "$ref": "#/$defs/__schema8"
+            },
+            "opportunityType": {
+              "$ref": "#/$defs/__schema10"
+            },
+            "or": {
+              "description": "OR condition - matches if ANY of the filters match",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema12"
+              }
+            },
+            "and": {
+              "description": "AND condition - matches if ALL filters match",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema12"
+              }
+            },
+            "not": {
+              "description": "NOT condition - matches if the filter does NOT match",
+              "$ref": "#/$defs/__schema12"
+            }
+          }
+        }
+      }
+    },
+    "find_one_opportunity": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The unique UUID of the record to retrieve",
+          "type": "string",
+          "format": "uuid"
+        },
+        "select": {
+          "description": "Fields to include in the response. Required. Use '*' to return all fields. Relation fields resolve to related records as {id, label} summaries: MANY_TO_ONE returns a single object (or select the <name>Id FK column for just the id), ONE_TO_MANY returns up to 60 related records.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["id", "select"]
+    },
+    "group_by_opportunities": {
+      "type": "object",
+      "properties": {
+        "groupBy": {
+          "description": "Fields to group by (max 2). Each entry must be an object with exactly one field key. Examples: {\"status\": true}, {\"companyId\": true}, {\"createdAt\": {\"granularity\": \"MONTH\", \"timeZone\": \"UTC\"}}. Available: createdAt (date), updatedAt (date), name, amount.amountMicros, amount.currencyCode, closeDate (date), companyId, pointOfContactId, ownerId, lastContactAt (date), lastContactItemMessageId, lastContactItemCalendarEventId, stage, product, opportunityType.",
+          "minItems": 1,
+          "maxItems": 2,
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "createdAt": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                },
+                "required": ["createdAt"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "updatedAt": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                },
+                "required": ["updatedAt"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": ["name"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "object",
+                    "properties": {
+                      "amountMicros": {
+                        "type": "boolean",
+                        "const": true
+                      }
+                    },
+                    "required": ["amountMicros"],
+                    "additionalProperties": false
+                  }
+                },
+                "required": ["amount"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "object",
+                    "properties": {
+                      "currencyCode": {
+                        "type": "boolean",
+                        "const": true
+                      }
+                    },
+                    "required": ["currencyCode"],
+                    "additionalProperties": false
+                  }
+                },
+                "required": ["amount"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "closeDate": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                },
+                "required": ["closeDate"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "companyId": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": ["companyId"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "pointOfContactId": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": ["pointOfContactId"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "ownerId": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": ["ownerId"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "lastContactAt": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                },
+                "required": ["lastContactAt"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "lastContactItemMessageId": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": ["lastContactItemMessageId"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "lastContactItemCalendarEventId": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": ["lastContactItemCalendarEventId"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "stage": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": ["stage"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "product": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": ["product"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "opportunityType": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": ["opportunityType"],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "aggregateOperation": {
+          "description": "Aggregate operation to apply per group. Default: COUNT. Any operation other than COUNT requires aggregateFieldName.",
+          "default": "COUNT",
+          "type": "string",
+          "enum": [
+            "MIN",
+            "MAX",
+            "AVG",
+            "SUM",
+            "COUNT",
+            "COUNT_UNIQUE_VALUES",
+            "COUNT_EMPTY",
+            "COUNT_NOT_EMPTY",
+            "COUNT_TRUE",
+            "COUNT_FALSE",
+            "PERCENTAGE_EMPTY",
+            "PERCENTAGE_NOT_EMPTY"
+          ]
+        },
+        "aggregateFieldName": {
+          "description": "Field to aggregate. Required for any operation other than COUNT. Available fields: id, createdAt, updatedAt, deletedAt, name, amount, amount.amountMicros, closeDate, position, createdBy, updatedBy, searchVector, lastContactAt, lastContactItemMessage, lastContactItemCalendarEvent, stage, product, opportunityType.",
+          "type": "string"
+        },
+        "limit": {
+          "description": "Maximum number of groups to return (default: 50, max: 100).",
+          "default": 50,
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "orderBy": {
+          "description": "Order groups by aggregate value. DESC (default) gives \"top N\" behavior.",
+          "default": "DESC",
+          "type": "string",
+          "enum": ["ASC", "DESC"]
+        },
+        "name": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "amount": {
+          "$ref": "#/$defs/__schema3"
+        },
+        "closeDate": {
+          "$ref": "#/$defs/__schema4"
+        },
+        "companyId": {
+          "$ref": "#/$defs/__schema5"
+        },
+        "pointOfContactId": {
+          "$ref": "#/$defs/__schema5"
+        },
+        "ownerId": {
+          "$ref": "#/$defs/__schema5"
+        },
+        "lastContactAt": {
+          "$ref": "#/$defs/__schema4"
+        },
+        "lastContactItemMessageId": {
+          "$ref": "#/$defs/__schema5"
+        },
+        "lastContactItemCalendarEventId": {
+          "$ref": "#/$defs/__schema5"
+        },
+        "stage": {
+          "$ref": "#/$defs/__schema6"
+        },
+        "product": {
+          "$ref": "#/$defs/__schema8"
+        },
+        "opportunityType": {
+          "$ref": "#/$defs/__schema10"
+        },
+        "or": {
+          "description": "OR condition - matches if ANY of the filters match",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema12"
+          }
+        },
+        "and": {
+          "description": "AND condition - matches if ALL filters match",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema12"
+          }
+        },
+        "not": {
+          "description": "NOT condition - matches if the filter does NOT match",
+          "$ref": "#/$defs/__schema12"
+        }
+      },
+      "required": ["groupBy"],
+      "additionalProperties": false,
+      "$defs": {
+        "__schema0": {
+          "description": "Date field grouping configuration",
+          "type": "object",
+          "properties": {
+            "granularity": {
+              "description": "Date grouping granularity. Default: MONTH.",
+              "default": "MONTH",
+              "type": "string",
+              "enum": [
+                "DAY",
+                "MONTH",
+                "QUARTER",
+                "YEAR",
+                "WEEK",
+                "DAY_OF_THE_WEEK",
+                "MONTH_OF_THE_YEAR",
+                "QUARTER_OF_THE_YEAR"
+              ]
+            },
+            "weekStartDay": {
+              "description": "First day of week (MONDAY, SUNDAY, SATURDAY). Only used when granularity is WEEK.",
+              "type": "string",
+              "enum": ["MONDAY", "SUNDAY", "SATURDAY"]
+            },
+            "timeZone": {
+              "description": "IANA timezone for date groupings (e.g. \"America/New_York\"). Default: UTC.",
+              "default": "UTC",
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "__schema1": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "type": "string"
+            },
+            "neq": {
+              "description": "Not equals",
+              "type": "string"
+            },
+            "in": {
+              "description": "In array",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "like": {
+              "description": "LIKE (% wildcard)",
+              "type": "string"
+            },
+            "ilike": {
+              "description": "ILIKE (% wildcard, case-insensitive)",
+              "type": "string"
+            },
+            "startsWith": {
+              "description": "Starts with",
+              "type": "string"
+            },
+            "endsWith": {
+              "description": "Ends with",
+              "type": "string"
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema2": {
+          "description": "Is null or not null",
+          "type": "string",
+          "enum": ["NULL", "NOT_NULL"]
+        },
+        "__schema3": {
+          "type": "object",
+          "properties": {
+            "amountMicros": {
+              "description": "Currency amount in micros (1 unit = 1,000,000 micros). Multiply the user-provided amount by 1,000,000 to build this filter.",
+              "type": "object",
+              "properties": {
+                "eq": {
+                  "description": "Equals",
+                  "type": "number"
+                },
+                "neq": {
+                  "description": "Not equals",
+                  "type": "number"
+                },
+                "gt": {
+                  "description": ">",
+                  "type": "number"
+                },
+                "gte": {
+                  "description": ">=",
+                  "type": "number"
+                },
+                "lt": {
+                  "description": "<",
+                  "type": "number"
+                },
+                "lte": {
+                  "description": "<=",
+                  "type": "number"
+                },
+                "in": {
+                  "description": "In array",
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "is": {
+                  "$ref": "#/$defs/__schema2"
+                }
+              }
+            },
+            "currencyCode": {
+              "type": "object",
+              "properties": {
+                "eq": {
+                  "description": "Equals",
+                  "type": "string"
+                },
+                "neq": {
+                  "description": "Not equals",
+                  "type": "string"
+                },
+                "in": {
+                  "description": "In array",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "is": {
+                  "$ref": "#/$defs/__schema2"
+                }
+              }
+            }
+          }
+        },
+        "__schema4": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals (ISO datetime)",
+              "type": "string",
+              "format": "date-time"
+            },
+            "neq": {
+              "description": "Not equals (ISO datetime)",
+              "type": "string",
+              "format": "date-time"
+            },
+            "gt": {
+              "description": "> ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "gte": {
+              "description": ">= ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "lt": {
+              "description": "< ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "lte": {
+              "description": "<= ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "in": {
+              "description": "In array (ISO datetimes)",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema5": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "type": "string",
+              "format": "uuid"
+            },
+            "neq": {
+              "description": "Not equals",
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": {
+              "description": "In array of values",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema6": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "$ref": "#/$defs/__schema7"
+            },
+            "neq": {
+              "description": "Not equals",
+              "$ref": "#/$defs/__schema7"
+            },
+            "in": {
+              "description": "In array of values",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema7"
+              }
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema7": {
+          "type": "string",
+          "enum": [
+            "NEW",
+            "CONTACTED",
+            "IN_DISCUSSION",
+            "PROPOSAL",
+            "WON",
+            "NOT_PROCEEDING"
+          ]
+        },
+        "__schema8": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "$ref": "#/$defs/__schema9"
+            },
+            "neq": {
+              "description": "Not equals",
+              "$ref": "#/$defs/__schema9"
+            },
+            "in": {
+              "description": "In array of values",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema9"
+              }
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema9": {
+          "type": "string",
+          "enum": ["GUITAR_WIRING"]
+        },
+        "__schema10": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "$ref": "#/$defs/__schema11"
+            },
+            "neq": {
+              "description": "Not equals",
+              "$ref": "#/$defs/__schema11"
+            },
+            "in": {
+              "description": "In array of values",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema11"
+              }
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema11": {
+          "type": "string",
+          "enum": ["CUSTOMER_SALE", "RETAILER_MANUFACTURER", "CREATOR_EDUCATOR"]
+        },
+        "__schema12": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/__schema1"
+            },
+            "amount": {
+              "$ref": "#/$defs/__schema3"
+            },
+            "closeDate": {
+              "$ref": "#/$defs/__schema4"
+            },
+            "companyId": {
+              "$ref": "#/$defs/__schema5"
+            },
+            "pointOfContactId": {
+              "$ref": "#/$defs/__schema5"
+            },
+            "ownerId": {
+              "$ref": "#/$defs/__schema5"
+            },
+            "lastContactAt": {
+              "$ref": "#/$defs/__schema4"
+            },
+            "lastContactItemMessageId": {
+              "$ref": "#/$defs/__schema5"
+            },
+            "lastContactItemCalendarEventId": {
+              "$ref": "#/$defs/__schema5"
+            },
+            "stage": {
+              "$ref": "#/$defs/__schema6"
+            },
+            "product": {
+              "$ref": "#/$defs/__schema8"
+            },
+            "opportunityType": {
+              "$ref": "#/$defs/__schema10"
+            },
+            "or": {
+              "description": "OR condition - matches if ANY of the filters match",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema12"
+              }
+            },
+            "and": {
+              "description": "AND condition - matches if ALL filters match",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema12"
+              }
+            },
+            "not": {
+              "description": "NOT condition - matches if the filter does NOT match",
+              "$ref": "#/$defs/__schema12"
+            }
+          }
+        }
+      }
+    },
+    "create_one_opportunity": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The opportunity name",
+          "type": "string"
+        },
+        "amount": {
+          "description": "Opportunity amount",
+          "type": "object",
+          "properties": {
+            "amountMicros": {
+              "description": "Currency amount in micros (1 unit = 1,000,000 micros). Multiply the user-provided amount by 1,000,000 before writing.",
+              "type": "number"
+            },
+            "currencyCode": {
+              "type": "string"
+            }
+          }
+        },
+        "closeDate": {
+          "description": "Opportunity close date",
+          "type": "string",
+          "format": "date-time"
+        },
+        "position": {
+          "description": "Use \"first\" to insert at the top, \"last\" for the bottom, or a number for explicit ordering. Leave empty to place at the top (recommended).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "first"
+            },
+            {
+              "type": "string",
+              "const": "last"
+            }
+          ]
+        },
+        "companyId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "pointOfContactId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "ownerId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "lastContactAt": {
+          "description": "When the most recent contact (email or meeting) with a person related to this opportunity occurred, in either direction.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastContactItemMessageId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "lastContactItemCalendarEventId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "stage": {
+          "description": "Track sales and partnership conversations from first contact to an agreed outcome. Use Tasks for the next follow-up.",
+          "type": "string",
+          "enum": [
+            "NEW",
+            "CONTACTED",
+            "IN_DISCUSSION",
+            "PROPOSAL",
+            "WON",
+            "NOT_PROCEEDING"
+          ]
+        },
+        "product": {
+          "type": "string",
+          "enum": ["GUITAR_WIRING"]
+        },
+        "opportunityType": {
+          "type": "string",
+          "enum": ["CUSTOMER_SALE", "RETAILER_MANUFACTURER", "CREATOR_EDUCATOR"]
+        }
+      },
+      "required": ["position", "stage"],
+      "$defs": {
+        "__schema0": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "update_one_opportunity": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The opportunity name",
+          "type": "string"
+        },
+        "amount": {
+          "description": "Opportunity amount",
+          "type": "object",
+          "properties": {
+            "amountMicros": {
+              "description": "Currency amount in micros (1 unit = 1,000,000 micros). Multiply the user-provided amount by 1,000,000 before writing.",
+              "type": "number"
+            },
+            "currencyCode": {
+              "type": "string"
+            }
+          }
+        },
+        "closeDate": {
+          "description": "Opportunity close date",
+          "type": "string",
+          "format": "date-time"
+        },
+        "position": {
+          "description": "Use \"first\" to insert at the top, \"last\" for the bottom, or a number for explicit ordering. Leave empty to place at the top (recommended).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "first"
+            },
+            {
+              "type": "string",
+              "const": "last"
+            }
+          ]
+        },
+        "companyId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "pointOfContactId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "ownerId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "lastContactAt": {
+          "description": "When the most recent contact (email or meeting) with a person related to this opportunity occurred, in either direction.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastContactItemMessageId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "lastContactItemCalendarEventId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "stage": {
+          "description": "Track sales and partnership conversations from first contact to an agreed outcome. Use Tasks for the next follow-up.",
+          "type": "string",
+          "enum": [
+            "NEW",
+            "CONTACTED",
+            "IN_DISCUSSION",
+            "PROPOSAL",
+            "WON",
+            "NOT_PROCEEDING"
+          ]
+        },
+        "product": {
+          "type": "string",
+          "enum": ["GUITAR_WIRING"]
+        },
+        "opportunityType": {
+          "type": "string",
+          "enum": ["CUSTOMER_SALE", "RETAILER_MANUFACTURER", "CREATOR_EDUCATOR"]
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": ["id"],
+      "$defs": {
+        "__schema0": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "find_many_companies": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "description": "Maximum number of records to return (default: 10, max: 100). Start small and increase only if needed.",
+          "default": 10,
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "offset": {
+          "description": "Number of records to skip (default: 0)",
+          "default": 0,
+          "type": "integer"
+        },
+        "orderBy": {
+          "description": "Sort by field(s). Scalar fields: [{fieldName: \"DescNullsLast\"}]. Composite fields (name, address, currency, …): [{fieldName: {subFieldName: \"AscNullsFirst\"}}] — e.g. [{\"name\": {\"firstName\": \"AscNullsFirst\"}}]. Never use dot-notation keys like \"name.firstName\". Use DescNullsLast for top/largest, AscNullsFirst for bottom/smallest.",
+          "type": "array",
+          "items": {
+            "description": "Object with exactly ONE property. For scalar fields use a direction string: {\"employees\": \"DescNullsLast\"}. For composite fields (e.g. name, address, currency) use a nested object with the sub-field: {\"name\": {\"firstName\": \"AscNullsFirst\"}}. Never use dot-notation keys like \"name.firstName\".",
+            "type": "object",
+            "properties": {},
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/__schema0"
+                },
+                {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "select": {
+          "description": "Fields to include in the response. Required. Use '*' to return all fields, or list specific field names. Relation fields resolve to related records as {id, label} summaries: MANY_TO_ONE returns a single object (or select the '<name>Id' FK column for just the id), ONE_TO_MANY returns up to 60 related records. For more fields or more records, query the related object directly. ",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "domainName": {
+          "$ref": "#/$defs/__schema3"
+        },
+        "address": {
+          "$ref": "#/$defs/__schema4"
+        },
+        "linkedinLink": {
+          "$ref": "#/$defs/__schema3"
+        },
+        "annualRevenue": {
+          "$ref": "#/$defs/__schema5"
+        },
+        "accountOwnerId": {
+          "$ref": "#/$defs/__schema6"
+        },
+        "lastContactAt": {
+          "$ref": "#/$defs/__schema7"
+        },
+        "lastContactItemCalendarEventId": {
+          "$ref": "#/$defs/__schema6"
+        },
+        "lastContactItemMessageId": {
+          "$ref": "#/$defs/__schema6"
+        },
+        "or": {
+          "description": "OR condition - matches if ANY of the filters match",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema8"
+          }
+        },
+        "and": {
+          "description": "AND condition - matches if ALL filters match",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema8"
+          }
+        },
+        "not": {
+          "description": "NOT condition - matches if the filter does NOT match",
+          "$ref": "#/$defs/__schema8"
+        }
+      },
+      "required": ["select"],
+      "$defs": {
+        "__schema0": {
+          "type": "string",
+          "enum": [
+            "AscNullsFirst",
+            "AscNullsLast",
+            "DescNullsFirst",
+            "DescNullsLast"
+          ]
+        },
+        "__schema1": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "type": "string"
+            },
+            "neq": {
+              "description": "Not equals",
+              "type": "string"
+            },
+            "in": {
+              "description": "In array",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "like": {
+              "description": "LIKE (% wildcard)",
+              "type": "string"
+            },
+            "ilike": {
+              "description": "ILIKE (% wildcard, case-insensitive)",
+              "type": "string"
+            },
+            "startsWith": {
+              "description": "Starts with",
+              "type": "string"
+            },
+            "endsWith": {
+              "description": "Ends with",
+              "type": "string"
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema2": {
+          "description": "Is null or not null",
+          "type": "string",
+          "enum": ["NULL", "NOT_NULL"]
+        },
+        "__schema3": {
+          "type": "object",
+          "properties": {
+            "primaryLinkUrl": {
+              "type": "object",
+              "properties": {
+                "eq": {
+                  "description": "Equals",
+                  "type": "string",
+                  "format": "uri"
+                },
+                "neq": {
+                  "description": "Not equals",
+                  "type": "string",
+                  "format": "uri"
+                },
+                "like": {
+                  "description": "LIKE (% wildcard)",
+                  "type": "string"
+                },
+                "ilike": {
+                  "description": "ILIKE (% wildcard, case-insensitive)",
+                  "type": "string"
+                },
+                "is": {
+                  "$ref": "#/$defs/__schema2"
+                }
+              }
+            }
+          }
+        },
+        "__schema4": {
+          "type": "object",
+          "properties": {
+            "addressStreet1": {
+              "type": "object",
+              "properties": {
+                "eq": {
+                  "description": "Equals",
+                  "type": "string"
+                },
+                "neq": {
+                  "description": "Not equals",
+                  "type": "string"
+                },
+                "like": {
+                  "description": "LIKE (% wildcard)",
+                  "type": "string"
+                },
+                "ilike": {
+                  "description": "ILIKE (% wildcard, case-insensitive)",
+                  "type": "string"
+                },
+                "is": {
+                  "$ref": "#/$defs/__schema2"
+                }
+              }
+            },
+            "addressCity": {
+              "type": "object",
+              "properties": {
+                "eq": {
+                  "description": "Equals",
+                  "type": "string"
+                },
+                "neq": {
+                  "description": "Not equals",
+                  "type": "string"
+                },
+                "like": {
+                  "description": "LIKE (% wildcard)",
+                  "type": "string"
+                },
+                "ilike": {
+                  "description": "ILIKE (% wildcard, case-insensitive)",
+                  "type": "string"
+                },
+                "is": {
+                  "$ref": "#/$defs/__schema2"
+                }
+              }
+            },
+            "addressCountry": {
+              "type": "object",
+              "properties": {
+                "eq": {
+                  "description": "Equals",
+                  "type": "string"
+                },
+                "neq": {
+                  "description": "Not equals",
+                  "type": "string"
+                },
+                "like": {
+                  "description": "LIKE (% wildcard)",
+                  "type": "string"
+                },
+                "ilike": {
+                  "description": "ILIKE (% wildcard, case-insensitive)",
+                  "type": "string"
+                },
+                "is": {
+                  "$ref": "#/$defs/__schema2"
+                }
+              }
+            }
+          }
+        },
+        "__schema5": {
+          "type": "object",
+          "properties": {
+            "amountMicros": {
+              "description": "Currency amount in micros (1 unit = 1,000,000 micros). Multiply the user-provided amount by 1,000,000 to build this filter.",
+              "type": "object",
+              "properties": {
+                "eq": {
+                  "description": "Equals",
+                  "type": "number"
+                },
+                "neq": {
+                  "description": "Not equals",
+                  "type": "number"
+                },
+                "gt": {
+                  "description": ">",
+                  "type": "number"
+                },
+                "gte": {
+                  "description": ">=",
+                  "type": "number"
+                },
+                "lt": {
+                  "description": "<",
+                  "type": "number"
+                },
+                "lte": {
+                  "description": "<=",
+                  "type": "number"
+                },
+                "in": {
+                  "description": "In array",
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "is": {
+                  "$ref": "#/$defs/__schema2"
+                }
+              }
+            },
+            "currencyCode": {
+              "type": "object",
+              "properties": {
+                "eq": {
+                  "description": "Equals",
+                  "type": "string"
+                },
+                "neq": {
+                  "description": "Not equals",
+                  "type": "string"
+                },
+                "in": {
+                  "description": "In array",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "is": {
+                  "$ref": "#/$defs/__schema2"
+                }
+              }
+            }
+          }
+        },
+        "__schema6": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "type": "string",
+              "format": "uuid"
+            },
+            "neq": {
+              "description": "Not equals",
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": {
+              "description": "In array of values",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema7": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals (ISO datetime)",
+              "type": "string",
+              "format": "date-time"
+            },
+            "neq": {
+              "description": "Not equals (ISO datetime)",
+              "type": "string",
+              "format": "date-time"
+            },
+            "gt": {
+              "description": "> ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "gte": {
+              "description": ">= ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "lt": {
+              "description": "< ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "lte": {
+              "description": "<= ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "in": {
+              "description": "In array (ISO datetimes)",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema8": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/__schema1"
+            },
+            "domainName": {
+              "$ref": "#/$defs/__schema3"
+            },
+            "address": {
+              "$ref": "#/$defs/__schema4"
+            },
+            "linkedinLink": {
+              "$ref": "#/$defs/__schema3"
+            },
+            "annualRevenue": {
+              "$ref": "#/$defs/__schema5"
+            },
+            "accountOwnerId": {
+              "$ref": "#/$defs/__schema6"
+            },
+            "lastContactAt": {
+              "$ref": "#/$defs/__schema7"
+            },
+            "lastContactItemCalendarEventId": {
+              "$ref": "#/$defs/__schema6"
+            },
+            "lastContactItemMessageId": {
+              "$ref": "#/$defs/__schema6"
+            },
+            "or": {
+              "description": "OR condition - matches if ANY of the filters match",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema8"
+              }
+            },
+            "and": {
+              "description": "AND condition - matches if ALL filters match",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema8"
+              }
+            },
+            "not": {
+              "description": "NOT condition - matches if the filter does NOT match",
+              "$ref": "#/$defs/__schema8"
+            }
+          }
+        }
+      }
+    },
+    "find_one_company": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The unique UUID of the record to retrieve",
+          "type": "string",
+          "format": "uuid"
+        },
+        "select": {
+          "description": "Fields to include in the response. Required. Use '*' to return all fields. Relation fields resolve to related records as {id, label} summaries: MANY_TO_ONE returns a single object (or select the <name>Id FK column for just the id), ONE_TO_MANY returns up to 60 related records.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["id", "select"]
+    },
+    "create_one_company": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The company name",
+          "type": "string"
+        },
+        "domainName": {
+          "description": "The company website URL. We use this url to fetch the company icon",
+          "$ref": "#/$defs/__schema0"
+        },
+        "address": {
+          "description": "Address of the company",
+          "type": "object",
+          "properties": {
+            "addressStreet1": {
+              "type": "string"
+            },
+            "addressStreet2": {
+              "type": "string"
+            },
+            "addressCity": {
+              "type": "string"
+            },
+            "addressPostcode": {
+              "type": "string"
+            },
+            "addressState": {
+              "type": "string"
+            },
+            "addressCountry": {
+              "type": "string"
+            },
+            "addressLat": {
+              "type": "number"
+            },
+            "addressLng": {
+              "type": "number"
+            }
+          }
+        },
+        "linkedinLink": {
+          "description": "The company Linkedin account",
+          "$ref": "#/$defs/__schema0"
+        },
+        "annualRevenue": {
+          "description": "The company's total annual revenue",
+          "type": "object",
+          "properties": {
+            "amountMicros": {
+              "description": "Currency amount in micros (1 unit = 1,000,000 micros). Multiply the user-provided amount by 1,000,000 before writing.",
+              "type": "number"
+            },
+            "currencyCode": {
+              "type": "string"
+            }
+          }
+        },
+        "position": {
+          "description": "Use \"first\" to insert at the top, \"last\" for the bottom, or a number for explicit ordering. Leave empty to place at the top (recommended).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "first"
+            },
+            {
+              "type": "string",
+              "const": "last"
+            }
+          ]
+        },
+        "accountOwnerId": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "lastContactAt": {
+          "description": "When the most recent contact (email or meeting) with a person from this company occurred, in either direction.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastContactItemCalendarEventId": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "lastContactItemMessageId": {
+          "$ref": "#/$defs/__schema1"
+        }
+      },
+      "required": ["position"],
+      "$defs": {
+        "__schema0": {
+          "type": "object",
+          "properties": {
+            "primaryLinkLabel": {
+              "type": "string"
+            },
+            "primaryLinkUrl": {
+              "type": "string",
+              "format": "uri"
+            },
+            "secondaryLinks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "label": {
+                    "type": "string"
+                  }
+                },
+                "required": ["url", "label"]
+              }
+            }
+          }
+        },
+        "__schema1": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "update_one_company": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The company name",
+          "type": "string"
+        },
+        "domainName": {
+          "description": "The company website URL. We use this url to fetch the company icon",
+          "$ref": "#/$defs/__schema0"
+        },
+        "address": {
+          "description": "Address of the company",
+          "type": "object",
+          "properties": {
+            "addressStreet1": {
+              "type": "string"
+            },
+            "addressStreet2": {
+              "type": "string"
+            },
+            "addressCity": {
+              "type": "string"
+            },
+            "addressPostcode": {
+              "type": "string"
+            },
+            "addressState": {
+              "type": "string"
+            },
+            "addressCountry": {
+              "type": "string"
+            },
+            "addressLat": {
+              "type": "number"
+            },
+            "addressLng": {
+              "type": "number"
+            }
+          }
+        },
+        "linkedinLink": {
+          "description": "The company Linkedin account",
+          "$ref": "#/$defs/__schema0"
+        },
+        "annualRevenue": {
+          "description": "The company's total annual revenue",
+          "type": "object",
+          "properties": {
+            "amountMicros": {
+              "description": "Currency amount in micros (1 unit = 1,000,000 micros). Multiply the user-provided amount by 1,000,000 before writing.",
+              "type": "number"
+            },
+            "currencyCode": {
+              "type": "string"
+            }
+          }
+        },
+        "position": {
+          "description": "Use \"first\" to insert at the top, \"last\" for the bottom, or a number for explicit ordering. Leave empty to place at the top (recommended).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "first"
+            },
+            {
+              "type": "string",
+              "const": "last"
+            }
+          ]
+        },
+        "accountOwnerId": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "lastContactAt": {
+          "description": "When the most recent contact (email or meeting) with a person from this company occurred, in either direction.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastContactItemCalendarEventId": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "lastContactItemMessageId": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": ["id"],
+      "$defs": {
+        "__schema0": {
+          "type": "object",
+          "properties": {
+            "primaryLinkLabel": {
+              "type": "string"
+            },
+            "primaryLinkUrl": {
+              "type": "string",
+              "format": "uri"
+            },
+            "secondaryLinks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "label": {
+                    "type": "string"
+                  }
+                },
+                "required": ["url", "label"]
+              }
+            }
+          }
+        },
+        "__schema1": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "find_many_people": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "description": "Maximum number of records to return (default: 10, max: 100). Start small and increase only if needed.",
+          "default": 10,
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "offset": {
+          "description": "Number of records to skip (default: 0)",
+          "default": 0,
+          "type": "integer"
+        },
+        "orderBy": {
+          "description": "Sort by field(s). Scalar fields: [{fieldName: \"DescNullsLast\"}]. Composite fields (name, address, currency, …): [{fieldName: {subFieldName: \"AscNullsFirst\"}}] — e.g. [{\"name\": {\"firstName\": \"AscNullsFirst\"}}]. Never use dot-notation keys like \"name.firstName\". Use DescNullsLast for top/largest, AscNullsFirst for bottom/smallest.",
+          "type": "array",
+          "items": {
+            "description": "Object with exactly ONE property. For scalar fields use a direction string: {\"employees\": \"DescNullsLast\"}. For composite fields (e.g. name, address, currency) use a nested object with the sub-field: {\"name\": {\"firstName\": \"AscNullsFirst\"}}. Never use dot-notation keys like \"name.firstName\".",
+            "type": "object",
+            "properties": {},
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/__schema0"
+                },
+                {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "select": {
+          "description": "Fields to include in the response. Required. Use '*' to return all fields, or list specific field names. Relation fields resolve to related records as {id, label} summaries: MANY_TO_ONE returns a single object (or select the '<name>Id' FK column for just the id), ONE_TO_MANY returns up to 60 related records. For more fields or more records, query the related object directly. ",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "emails": {
+          "$ref": "#/$defs/__schema3"
+        },
+        "linkedinLink": {
+          "$ref": "#/$defs/__schema4"
+        },
+        "jobTitle": {
+          "$ref": "#/$defs/__schema5"
+        },
+        "phones": {
+          "$ref": "#/$defs/__schema6"
+        },
+        "companyId": {
+          "$ref": "#/$defs/__schema7"
+        },
+        "lastInboundAt": {
+          "$ref": "#/$defs/__schema8"
+        },
+        "lastContactAt": {
+          "$ref": "#/$defs/__schema8"
+        },
+        "lastOutboundAt": {
+          "$ref": "#/$defs/__schema8"
+        },
+        "lastMeetingId": {
+          "$ref": "#/$defs/__schema7"
+        },
+        "lastContactItemMessageId": {
+          "$ref": "#/$defs/__schema7"
+        },
+        "lastEmailId": {
+          "$ref": "#/$defs/__schema7"
+        },
+        "lastContactById": {
+          "$ref": "#/$defs/__schema7"
+        },
+        "lastContactItemCalendarEventId": {
+          "$ref": "#/$defs/__schema7"
+        },
+        "or": {
+          "description": "OR condition - matches if ANY of the filters match",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema9"
+          }
+        },
+        "and": {
+          "description": "AND condition - matches if ALL filters match",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema9"
+          }
+        },
+        "not": {
+          "description": "NOT condition - matches if the filter does NOT match",
+          "$ref": "#/$defs/__schema9"
+        }
+      },
+      "required": ["select"],
+      "$defs": {
+        "__schema0": {
+          "type": "string",
+          "enum": [
+            "AscNullsFirst",
+            "AscNullsLast",
+            "DescNullsFirst",
+            "DescNullsLast"
+          ]
+        },
+        "__schema1": {
+          "type": "object",
+          "properties": {
+            "firstName": {
+              "type": "object",
+              "properties": {
+                "eq": {
+                  "description": "Equals",
+                  "type": "string"
+                },
+                "neq": {
+                  "description": "Not equals",
+                  "type": "string"
+                },
+                "like": {
+                  "description": "LIKE (% wildcard)",
+                  "type": "string"
+                },
+                "ilike": {
+                  "description": "ILIKE (% wildcard, case-insensitive)",
+                  "type": "string"
+                },
+                "startsWith": {
+                  "description": "Starts with",
+                  "type": "string"
+                },
+                "endsWith": {
+                  "description": "Ends with",
+                  "type": "string"
+                },
+                "is": {
+                  "$ref": "#/$defs/__schema2"
+                }
+              }
+            },
+            "lastName": {
+              "type": "object",
+              "properties": {
+                "eq": {
+                  "description": "Equals",
+                  "type": "string"
+                },
+                "neq": {
+                  "description": "Not equals",
+                  "type": "string"
+                },
+                "like": {
+                  "description": "LIKE (% wildcard)",
+                  "type": "string"
+                },
+                "ilike": {
+                  "description": "ILIKE (% wildcard, case-insensitive)",
+                  "type": "string"
+                },
+                "startsWith": {
+                  "description": "Starts with",
+                  "type": "string"
+                },
+                "endsWith": {
+                  "description": "Ends with",
+                  "type": "string"
+                },
+                "is": {
+                  "$ref": "#/$defs/__schema2"
+                }
+              }
+            }
+          }
+        },
+        "__schema2": {
+          "description": "Is null or not null",
+          "type": "string",
+          "enum": ["NULL", "NOT_NULL"]
+        },
+        "__schema3": {
+          "type": "object",
+          "properties": {
+            "primaryEmail": {
+              "type": "object",
+              "properties": {
+                "eq": {
+                  "description": "Equals",
+                  "type": "string",
+                  "format": "email"
+                },
+                "neq": {
+                  "description": "Not equals",
+                  "type": "string",
+                  "format": "email"
+                },
+                "like": {
+                  "description": "LIKE (% wildcard)",
+                  "type": "string"
+                },
+                "ilike": {
+                  "description": "ILIKE (% wildcard, case-insensitive)",
+                  "type": "string"
+                },
+                "is": {
+                  "$ref": "#/$defs/__schema2"
+                }
+              }
+            }
+          }
+        },
+        "__schema4": {
+          "type": "object",
+          "properties": {
+            "primaryLinkUrl": {
+              "type": "object",
+              "properties": {
+                "eq": {
+                  "description": "Equals",
+                  "type": "string",
+                  "format": "uri"
+                },
+                "neq": {
+                  "description": "Not equals",
+                  "type": "string",
+                  "format": "uri"
+                },
+                "like": {
+                  "description": "LIKE (% wildcard)",
+                  "type": "string"
+                },
+                "ilike": {
+                  "description": "ILIKE (% wildcard, case-insensitive)",
+                  "type": "string"
+                },
+                "is": {
+                  "$ref": "#/$defs/__schema2"
+                }
+              }
+            }
+          }
+        },
+        "__schema5": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "type": "string"
+            },
+            "neq": {
+              "description": "Not equals",
+              "type": "string"
+            },
+            "in": {
+              "description": "In array",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "like": {
+              "description": "LIKE (% wildcard)",
+              "type": "string"
+            },
+            "ilike": {
+              "description": "ILIKE (% wildcard, case-insensitive)",
+              "type": "string"
+            },
+            "startsWith": {
+              "description": "Starts with",
+              "type": "string"
+            },
+            "endsWith": {
+              "description": "Ends with",
+              "type": "string"
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema6": {
+          "type": "object",
+          "properties": {
+            "primaryPhoneNumber": {
+              "type": "object",
+              "properties": {
+                "eq": {
+                  "description": "Equals",
+                  "type": "string"
+                },
+                "neq": {
+                  "description": "Not equals",
+                  "type": "string"
+                },
+                "like": {
+                  "description": "LIKE (% wildcard)",
+                  "type": "string"
+                },
+                "ilike": {
+                  "description": "ILIKE (% wildcard, case-insensitive)",
+                  "type": "string"
+                },
+                "is": {
+                  "$ref": "#/$defs/__schema2"
+                }
+              }
+            }
+          }
+        },
+        "__schema7": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "type": "string",
+              "format": "uuid"
+            },
+            "neq": {
+              "description": "Not equals",
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": {
+              "description": "In array of values",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema8": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals (ISO datetime)",
+              "type": "string",
+              "format": "date-time"
+            },
+            "neq": {
+              "description": "Not equals (ISO datetime)",
+              "type": "string",
+              "format": "date-time"
+            },
+            "gt": {
+              "description": "> ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "gte": {
+              "description": ">= ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "lt": {
+              "description": "< ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "lte": {
+              "description": "<= ISO datetime",
+              "type": "string",
+              "format": "date-time"
+            },
+            "in": {
+              "description": "In array (ISO datetimes)",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        },
+        "__schema9": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "$ref": "#/$defs/__schema1"
+            },
+            "emails": {
+              "$ref": "#/$defs/__schema3"
+            },
+            "linkedinLink": {
+              "$ref": "#/$defs/__schema4"
+            },
+            "jobTitle": {
+              "$ref": "#/$defs/__schema5"
+            },
+            "phones": {
+              "$ref": "#/$defs/__schema6"
+            },
+            "companyId": {
+              "$ref": "#/$defs/__schema7"
+            },
+            "lastInboundAt": {
+              "$ref": "#/$defs/__schema8"
+            },
+            "lastContactAt": {
+              "$ref": "#/$defs/__schema8"
+            },
+            "lastOutboundAt": {
+              "$ref": "#/$defs/__schema8"
+            },
+            "lastMeetingId": {
+              "$ref": "#/$defs/__schema7"
+            },
+            "lastContactItemMessageId": {
+              "$ref": "#/$defs/__schema7"
+            },
+            "lastEmailId": {
+              "$ref": "#/$defs/__schema7"
+            },
+            "lastContactById": {
+              "$ref": "#/$defs/__schema7"
+            },
+            "lastContactItemCalendarEventId": {
+              "$ref": "#/$defs/__schema7"
+            },
+            "or": {
+              "description": "OR condition - matches if ANY of the filters match",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema9"
+              }
+            },
+            "and": {
+              "description": "AND condition - matches if ALL filters match",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema9"
+              }
+            },
+            "not": {
+              "description": "NOT condition - matches if the filter does NOT match",
+              "$ref": "#/$defs/__schema9"
+            }
+          }
+        }
+      }
+    },
+    "find_one_person": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "The unique UUID of the record to retrieve",
+          "type": "string",
+          "format": "uuid"
+        },
+        "select": {
+          "description": "Fields to include in the response. Required. Use '*' to return all fields. Relation fields resolve to related records as {id, label} summaries: MANY_TO_ONE returns a single object (or select the <name>Id FK column for just the id), ONE_TO_MANY returns up to 60 related records.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["id", "select"]
+    },
+    "create_one_person": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Contact's name",
+          "type": "object",
+          "properties": {
+            "firstName": {
+              "type": "string"
+            },
+            "lastName": {
+              "type": "string"
+            }
+          }
+        },
+        "emails": {
+          "description": "Contact's Emails",
+          "type": "object",
+          "properties": {
+            "primaryEmail": {
+              "type": "string",
+              "format": "email"
+            },
+            "additionalEmails": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "email"
+              }
+            }
+          }
+        },
+        "linkedinLink": {
+          "description": "Contact's Linkedin account",
+          "type": "object",
+          "properties": {
+            "primaryLinkLabel": {
+              "type": "string"
+            },
+            "primaryLinkUrl": {
+              "type": "string",
+              "format": "uri"
+            },
+            "secondaryLinks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "label": {
+                    "type": "string"
+                  }
+                },
+                "required": ["url", "label"]
+              }
+            }
+          }
+        },
+        "jobTitle": {
+          "description": "Contact's job title",
+          "type": "string"
+        },
+        "phones": {
+          "description": "Contact's phone numbers",
+          "type": "object",
+          "properties": {
+            "primaryPhoneNumber": {
+              "type": "string"
+            },
+            "primaryPhoneCountryCode": {
+              "type": "string"
+            },
+            "primaryPhoneCallingCode": {
+              "type": "string"
+            },
+            "additionalPhones": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "number": {
+                    "type": "string"
+                  },
+                  "countryCode": {
+                    "type": "string"
+                  },
+                  "callingCode": {
+                    "type": "string"
+                  }
+                },
+                "required": ["number"]
+              }
+            }
+          }
+        },
+        "avatarUrl": {
+          "description": "Contact's avatar",
+          "type": "string"
+        },
+        "avatarFile": {
+          "description": "Contact's avatar file",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "fileId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": ["fileId", "label"],
+            "additionalProperties": false
+          }
+        },
+        "position": {
+          "description": "Use \"first\" to insert at the top, \"last\" for the bottom, or a number for explicit ordering. Leave empty to place at the top (recommended).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "first"
+            },
+            {
+              "type": "string",
+              "const": "last"
+            }
+          ]
+        },
+        "companyId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "lastInboundAt": {
+          "description": "When this person last reached out to you (an inbound email, or a meeting they organized).",
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastContactAt": {
+          "description": "When the most recent contact (email or meeting) with this person occurred, in either direction.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastOutboundAt": {
+          "description": "When your team last reached out to this person (an outbound email, or a meeting your team organized).",
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastMeetingId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "lastContactItemMessageId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "lastEmailId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "lastContactById": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "lastContactItemCalendarEventId": {
+          "$ref": "#/$defs/__schema0"
+        }
+      },
+      "required": ["position"],
+      "$defs": {
+        "__schema0": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "update_one_person": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Contact's name",
+          "type": "object",
+          "properties": {
+            "firstName": {
+              "type": "string"
+            },
+            "lastName": {
+              "type": "string"
+            }
+          }
+        },
+        "emails": {
+          "description": "Contact's Emails",
+          "type": "object",
+          "properties": {
+            "primaryEmail": {
+              "type": "string",
+              "format": "email"
+            },
+            "additionalEmails": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "email"
+              }
+            }
+          }
+        },
+        "linkedinLink": {
+          "description": "Contact's Linkedin account",
+          "type": "object",
+          "properties": {
+            "primaryLinkLabel": {
+              "type": "string"
+            },
+            "primaryLinkUrl": {
+              "type": "string",
+              "format": "uri"
+            },
+            "secondaryLinks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "label": {
+                    "type": "string"
+                  }
+                },
+                "required": ["url", "label"]
+              }
+            }
+          }
+        },
+        "jobTitle": {
+          "description": "Contact's job title",
+          "type": "string"
+        },
+        "phones": {
+          "description": "Contact's phone numbers",
+          "type": "object",
+          "properties": {
+            "primaryPhoneNumber": {
+              "type": "string"
+            },
+            "primaryPhoneCountryCode": {
+              "type": "string"
+            },
+            "primaryPhoneCallingCode": {
+              "type": "string"
+            },
+            "additionalPhones": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "number": {
+                    "type": "string"
+                  },
+                  "countryCode": {
+                    "type": "string"
+                  },
+                  "callingCode": {
+                    "type": "string"
+                  }
+                },
+                "required": ["number"]
+              }
+            }
+          }
+        },
+        "avatarUrl": {
+          "description": "Contact's avatar",
+          "type": "string"
+        },
+        "avatarFile": {
+          "description": "Contact's avatar file",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "fileId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": ["fileId", "label"],
+            "additionalProperties": false
+          }
+        },
+        "position": {
+          "description": "Use \"first\" to insert at the top, \"last\" for the bottom, or a number for explicit ordering. Leave empty to place at the top (recommended).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "first"
+            },
+            {
+              "type": "string",
+              "const": "last"
+            }
+          ]
+        },
+        "companyId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "lastInboundAt": {
+          "description": "When this person last reached out to you (an inbound email, or a meeting they organized).",
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastContactAt": {
+          "description": "When the most recent contact (email or meeting) with this person occurred, in either direction.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastOutboundAt": {
+          "description": "When your team last reached out to this person (an outbound email, or a meeting your team organized).",
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastMeetingId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "lastContactItemMessageId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "lastEmailId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "lastContactById": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "lastContactItemCalendarEventId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": ["id"],
+      "$defs": {
+        "__schema0": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "find_many_note_targets": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "description": "Maximum number of records to return (default: 10, max: 100). Start small and increase only if needed.",
+          "default": 10,
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "offset": {
+          "description": "Number of records to skip (default: 0)",
+          "default": 0,
+          "type": "integer"
+        },
+        "orderBy": {
+          "description": "Sort by field(s). Scalar fields: [{fieldName: \"DescNullsLast\"}]. Composite fields (name, address, currency, …): [{fieldName: {subFieldName: \"AscNullsFirst\"}}] — e.g. [{\"name\": {\"firstName\": \"AscNullsFirst\"}}]. Never use dot-notation keys like \"name.firstName\". Use DescNullsLast for top/largest, AscNullsFirst for bottom/smallest.",
+          "type": "array",
+          "items": {
+            "description": "Object with exactly ONE property. For scalar fields use a direction string: {\"employees\": \"DescNullsLast\"}. For composite fields (e.g. name, address, currency) use a nested object with the sub-field: {\"name\": {\"firstName\": \"AscNullsFirst\"}}. Never use dot-notation keys like \"name.firstName\".",
+            "type": "object",
+            "properties": {},
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/__schema0"
+                },
+                {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "$ref": "#/$defs/__schema0"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "select": {
+          "description": "Fields to include in the response. Required. Use '*' to return all fields, or list specific field names. Relation fields resolve to related records as {id, label} summaries: MANY_TO_ONE returns a single object (or select the '<name>Id' FK column for just the id), ONE_TO_MANY returns up to 60 related records. For more fields or more records, query the related object directly. ",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "targetCompanyId": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "noteId": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "targetPersonId": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "targetOpportunityId": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "or": {
+          "description": "OR condition - matches if ANY of the filters match",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema2"
+          }
+        },
+        "and": {
+          "description": "AND condition - matches if ALL filters match",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema2"
+          }
+        },
+        "not": {
+          "description": "NOT condition - matches if the filter does NOT match",
+          "$ref": "#/$defs/__schema2"
+        }
+      },
+      "required": ["select"],
+      "$defs": {
+        "__schema0": {
+          "type": "string",
+          "enum": [
+            "AscNullsFirst",
+            "AscNullsLast",
+            "DescNullsFirst",
+            "DescNullsLast"
+          ]
+        },
+        "__schema1": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "description": "Equals",
+              "type": "string",
+              "format": "uuid"
+            },
+            "neq": {
+              "description": "Not equals",
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": {
+              "description": "In array of values",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "is": {
+              "description": "Is null or not null",
+              "type": "string",
+              "enum": ["NULL", "NOT_NULL"]
+            }
+          }
+        },
+        "__schema2": {
+          "type": "object",
+          "properties": {
+            "targetCompanyId": {
+              "$ref": "#/$defs/__schema1"
+            },
+            "noteId": {
+              "$ref": "#/$defs/__schema1"
+            },
+            "targetPersonId": {
+              "$ref": "#/$defs/__schema1"
+            },
+            "targetOpportunityId": {
+              "$ref": "#/$defs/__schema1"
+            },
+            "or": {
+              "description": "OR condition - matches if ANY of the filters match",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema2"
+              }
+            },
+            "and": {
+              "description": "AND condition - matches if ALL filters match",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema2"
+              }
+            },
+            "not": {
+              "description": "NOT condition - matches if the filter does NOT match",
+              "$ref": "#/$defs/__schema2"
+            }
+          }
+        }
+      }
+    },
+    "create_one_note_target": {
+      "type": "object",
+      "properties": {
+        "position": {
+          "description": "Use \"first\" to insert at the top, \"last\" for the bottom, or a number for explicit ordering. Leave empty to place at the top (recommended).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "first"
+            },
+            {
+              "type": "string",
+              "const": "last"
+            }
+          ]
+        },
+        "targetCompanyId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "noteId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "targetPersonId": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "targetOpportunityId": {
+          "$ref": "#/$defs/__schema0"
+        }
+      },
+      "required": ["position"],
+      "$defs": {
+        "__schema0": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    }
+  },
+  "fields": {
+    "company": [
+      "accountOwner",
+      "accountOwnerId",
+      "address",
+      "annualRevenue",
+      "attachments",
+      "calendarEventTargets",
+      "createdAt",
+      "createdBy",
+      "deletedAt",
+      "domainName",
+      "id",
+      "lastContactAt",
+      "lastContactItemCalendarEvent",
+      "lastContactItemCalendarEventId",
+      "lastContactItemMessage",
+      "lastContactItemMessageId",
+      "linkedinLink",
+      "messageThreadTargets",
+      "name",
+      "noteTargets",
+      "opportunities",
+      "people",
+      "position",
+      "taskTargets",
+      "timelineActivities",
+      "updatedAt",
+      "updatedBy"
+    ],
+    "person": [
+      "attachments",
+      "avatarFile",
+      "avatarUrl",
+      "calendarEventParticipants",
+      "calendarEventTargets",
+      "company",
+      "companyId",
+      "createdAt",
+      "createdBy",
+      "deletedAt",
+      "emails",
+      "id",
+      "jobTitle",
+      "lastContactAt",
+      "lastContactBy",
+      "lastContactById",
+      "lastContactItemCalendarEvent",
+      "lastContactItemCalendarEventId",
+      "lastContactItemMessage",
+      "lastContactItemMessageId",
+      "lastEmail",
+      "lastEmailId",
+      "lastInboundAt",
+      "lastMeeting",
+      "lastMeetingId",
+      "lastOutboundAt",
+      "linkedinLink",
+      "listMemberships",
+      "messageParticipants",
+      "messageThreadTargets",
+      "name",
+      "noteTargets",
+      "phones",
+      "pointOfContactForOpportunities",
+      "position",
+      "taskTargets",
+      "timelineActivities",
+      "updatedAt",
+      "updatedBy"
+    ],
+    "opportunity": [
+      "amount",
+      "attachments",
+      "calendarEventTargets",
+      "closeDate",
+      "company",
+      "companyId",
+      "createdAt",
+      "createdBy",
+      "deletedAt",
+      "id",
+      "lastContactAt",
+      "lastContactItemCalendarEvent",
+      "lastContactItemCalendarEventId",
+      "lastContactItemMessage",
+      "lastContactItemMessageId",
+      "messageThreadTargets",
+      "name",
+      "noteTargets",
+      "opportunityType",
+      "owner",
+      "ownerId",
+      "pointOfContact",
+      "pointOfContactId",
+      "position",
+      "product",
+      "stage",
+      "taskTargets",
+      "timelineActivities",
+      "updatedAt",
+      "updatedBy"
+    ],
+    "note": [
+      "attachments",
+      "bodyV2",
+      "createdAt",
+      "createdBy",
+      "deletedAt",
+      "id",
+      "noteTargets",
+      "position",
+      "timelineActivities",
+      "title",
+      "updatedAt",
+      "updatedBy"
+    ],
+    "task": [
+      "assignee",
+      "assigneeId",
+      "attachments",
+      "bodyV2",
+      "createdAt",
+      "createdBy",
+      "deletedAt",
+      "dueAt",
+      "id",
+      "position",
+      "status",
+      "taskTargets",
+      "timelineActivities",
+      "title",
+      "updatedAt",
+      "updatedBy"
+    ],
+    "note_target": [
+      "createdAt",
+      "createdBy",
+      "deletedAt",
+      "id",
+      "note",
+      "noteId",
+      "position",
+      "targetCompany",
+      "targetCompanyId",
+      "targetOpportunity",
+      "targetOpportunityId",
+      "targetPerson",
+      "targetPersonId",
+      "updatedAt",
+      "updatedBy"
+    ],
+    "task_target": [
+      "createdAt",
+      "createdBy",
+      "deletedAt",
+      "id",
+      "position",
+      "targetCompany",
+      "targetCompanyId",
+      "targetOpportunity",
+      "targetOpportunityId",
+      "targetPerson",
+      "targetPersonId",
+      "task",
+      "taskId",
+      "updatedAt",
+      "updatedBy"
+    ]
+  }
+}

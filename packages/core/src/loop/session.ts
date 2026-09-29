@@ -53,6 +53,14 @@ import {
   SENTRY_WRITE_TOOL,
   SENTRY_MARKER,
   SENTRY_DRIVE_GUIDANCE,
+  TWENTY_READ_TOOL,
+  TWENTY_WRITE_TOOL,
+  TWENTY_MARKER,
+  TWENTY_DRIVE_GUIDANCE,
+  CHATWOOT_READ_TOOL,
+  CHATWOOT_WRITE_TOOL,
+  CHATWOOT_MARKER,
+  CHATWOOT_DRIVE_GUIDANCE,
   BROWSER_MARKER,
   SOURCES_GUIDANCE,
   SOURCES_MARKER,
@@ -66,6 +74,8 @@ import type { SpawnAgentFn, IToolContext, EditGuard } from "./tools";
 import { resolveLinearCapability } from "./tools/linear-ops";
 import { resolveNotionCapability } from "./tools/notion-ops";
 import { resolveSentryCapability } from "./tools/sentry-ops";
+import { resolveChatwootCapability } from "./tools/chatwoot-ops";
+import { resolveTwentyCapability } from "./tools/twenty-ops";
 import { suppressedIntegrationServers } from "./tools/integration-servers";
 import { suppressCuratedSchemas } from "./tools/integration-common";
 import type { PolicyMode, IPolicyRules } from "../policy";
@@ -2790,6 +2800,35 @@ export class Session {
     this.ctx.tool.sentry = true;
     this.addIntegrationTools([SENTRY_READ_TOOL, SENTRY_WRITE_TOOL]);
     this.guideOnce(SENTRY_MARKER, SENTRY_DRIVE_GUIDANCE);
+
+    return true;
+  }
+
+  /** Turn on the Twenty CRM verbs when a `twenty` MCP server is connected.
+   *  Mirrors setNotionCapability. Returns whether it turned on. Idempotent. */
+  setTwentyCapability(): boolean {
+    if (!resolveTwentyCapability(this.ctx.tool.mcpRegistry)) {
+      return false;
+    }
+
+    this.ctx.tool.twenty = true;
+    this.addIntegrationTools([TWENTY_READ_TOOL, TWENTY_WRITE_TOOL]);
+    this.guideOnce(TWENTY_MARKER, TWENTY_DRIVE_GUIDANCE);
+
+    return true;
+  }
+
+  /** Turn on the Chatwoot verbs when chatwootUrl/Token/AccountId are configured.
+   *  Chatwoot is REST, not MCP, so no registry is involved. Returns whether it
+   *  turned on. Idempotent. */
+  setChatwootCapability(): boolean {
+    if (!resolveChatwootCapability()) {
+      return false;
+    }
+
+    this.ctx.tool.chatwoot = true;
+    this.addIntegrationTools([CHATWOOT_READ_TOOL, CHATWOOT_WRITE_TOOL]);
+    this.guideOnce(CHATWOOT_MARKER, CHATWOOT_DRIVE_GUIDANCE);
 
     return true;
   }
